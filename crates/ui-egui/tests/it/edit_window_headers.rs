@@ -50,6 +50,7 @@ fn bypassed(h: &Harness<'_, SoundApp>, slot: usize) -> bool {
 fn harness(track: &str, height: &str, view: &str) -> (Harness<'static, SoundApp>, TrackId, [f32; 4]) {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.run(view, json!({})).unwrap();
+    super::docking_workflows::close_browser(&mut app.ui);
     app.run("track.height", json!({"tracks": [track], "height": height})).unwrap();
     let id = app.engine.session().track_by_name(track).unwrap().id;
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_ui_state(

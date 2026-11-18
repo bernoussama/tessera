@@ -5,7 +5,7 @@ use craft_ui::layout::{SplitAxis, SplitSize};
 use egui::{Rect, accesskit::Role};
 use egui_kittest::kittest::Queryable;
 use serde_json::json;
-use soundcraft_ui_egui::docking::{self, CLIPS_WIDTH, MIDI_HEIGHT, Panel, TRACKS_WIDTH};
+use soundcraft_ui_egui::docking::{self, BROWSER_WIDTH, CLIPS_WIDTH, MIDI_HEIGHT, Panel, TRACKS_WIDTH};
 use soundcraft_ui_egui::{MainWindow, Services, SoundApp, UiState};
 
 use super::docking_workflows::{drag, harness, side_lists_state};
@@ -38,7 +38,9 @@ fn dock_columns(h: &egui_kittest::Harness<'_, SoundApp>, side: Side) -> Vec<Colu
 #[test]
 fn default_layouts_show_the_canvas_with_the_midi_editor_below_and_no_side_lists() {
     let edit = docking::edit_default();
-    let expected = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + 26.0), tabs(Panel::Canvas), tabs(Panel::Midi));
+    let canvas_and_midi = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + 26.0), tabs(Panel::Canvas), tabs(Panel::Midi));
+    let expected =
+        split(SplitAxis::Horizontal, SplitSize::FixedFirst(BROWSER_WIDTH), dock(Side::Start, Panel::Browser, BROWSER_WIDTH), canvas_and_midi);
     assert_eq!(edit.layout.root, Some(expected));
     assert_eq!((TRACKS_WIDTH, CLIPS_WIDTH, MIDI_HEIGHT), (168.0, 230.0, 260.0));
     let mix = docking::mix_default();

@@ -153,6 +153,7 @@ fn lane_menu_and_drops(app: &mut SoundApp, ui: &mut Ui, track: &Track, lane: Rec
     if resp.dnd_hover_payload::<crate::DragSource>().is_some() {
         ui.painter().rect_stroke(lane, 0.0, Stroke::new(2.0, Tokens::current().accent), StrokeKind::Inside);
     }
+    crate::panels::browser::drop_on_track(app, ui, &resp, track);
     // Audio files dropped from outside onto an instrument track load its sampler.
     if track.kind == soundcraft_model::TrackKind::Instrument {
         crate::sampler_window::drop_target(app, ui.ctx(), lane, track.id);

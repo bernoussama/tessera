@@ -18,10 +18,11 @@ pub enum Panel {
     Midi,
     Memory,
     History,
+    Browser,
 }
 
 impl Panel {
-    pub const ALL: &[Self] = &[Self::Canvas, Self::Tracks, Self::Clips, Self::Midi, Self::Memory, Self::History];
+    pub const ALL: &[Self] = &[Self::Canvas, Self::Tracks, Self::Clips, Self::Midi, Self::Memory, Self::History, Self::Browser];
     fn label(self) -> &'static str {
         match self {
             Self::Canvas => "Session",
@@ -30,6 +31,7 @@ impl Panel {
             Self::Midi => "MIDI Editor",
             Self::Memory => "Memory Locations",
             Self::History => "Undo History",
+            Self::Browser => "Browser",
         }
     }
 }
@@ -38,6 +40,8 @@ impl Panel {
 pub const TRACKS_WIDTH: f32 = 168.0;
 /// Width of the Clips column in the end dock.
 pub const CLIPS_WIDTH: f32 = 230.0;
+/// Width of the Browser column in the start dock.
+pub const BROWSER_WIDTH: f32 = 180.0;
 /// Height of the MIDI editor's body docked under the session view.
 pub const MIDI_HEIGHT: f32 = 260.0;
 
@@ -96,16 +100,23 @@ fn default_dock(panel: Panel) -> Option<(Side, f32)> {
     match panel {
         Panel::Tracks => Some((Side::Start, TRACKS_WIDTH)),
         Panel::Clips => Some((Side::End, CLIPS_WIDTH)),
+        Panel::Browser => Some((Side::Start, BROWSER_WIDTH)),
         _ => None,
     }
 }
 
 /// The Edit window's built-in arrangement: the document view in the centre, with the MIDI editor
-/// docked along the bottom. Tracks and Groups, Clips, Memory Locations and Undo History start
-/// closed; the Window menu opens them.
+/// docked along the bottom and the Browser docked on the left. Tracks and Groups, Clips, Memory
+/// Locations and Undo History start closed; the Window menu opens them.
 pub fn edit_default() -> Workspace {
+    let canvas_and_midi = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + MIDI_TAB_HEIGHT), tabs(Panel::Canvas), tabs(Panel::Midi));
     Workspace::new(Layout {
-        root: Some(split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + MIDI_TAB_HEIGHT), tabs(Panel::Canvas), tabs(Panel::Midi))),
+        root: Some(split(
+            SplitAxis::Horizontal,
+            SplitSize::FixedFirst(BROWSER_WIDTH),
+            dock(Side::Start, Panel::Browser, BROWSER_WIDTH),
+            canvas_and_midi,
+        )),
         floating: default_floating(),
     })
 }
@@ -124,10 +135,11 @@ pub fn mix_default() -> Workspace {
     })
 }
 
-/// The version of the saved panel layouts, kept in [`crate::UiState::docking_version`]. Version 2
-/// has the MIDI editor docked under the document view; version 1 had Tracks and Groups and Clips
+/// The version of the saved panel layouts, kept in [`crate::UiState::docking_version`]. Version 3
+/// docks the Browser on the left of the Edit window; version 2 has the MIDI editor docked under
+/// the document view; version 1 had Tracks and Groups and Clips
 /// in dock columns, and settings without a version have split frames.
-pub const LAYOUT_VERSION: u32 = 2;
+pub const LAYOUT_VERSION: u32 = 3;
 
 /// Drop the panel layouts (with their hidden panels) from saved [`crate::UiState`] settings older
 /// than [`LAYOUT_VERSION`], before they are read, so they load as the default layouts. The panel
@@ -501,6 +513,7 @@ pub fn show(app: &mut crate::SoundApp, ui: &mut egui::Ui, window: crate::MainWin
             }
             Panel::Memory => crate::panels::memory_locations(app, ui),
             Panel::History => crate::panels::undo_history(app, ui),
+            Panel::Browser => crate::panels::browser::show(app, ui),
         },
     );
     let _ = sync(&mut workspace, app, edit);
@@ -537,6 +550,7 @@ fn panel_limits(panel: &Panel) -> PanelLimits {
         Panel::Midi => (egui::vec2(420.0, 260.0), 1_000_000.0),
         Panel::Memory => (egui::vec2(260.0, 160.0), 1_000_000.0),
         Panel::History => (egui::vec2(200.0, 160.0), 720.0),
+        Panel::Browser => (egui::vec2(140.0, 120.0), 520.0),
     };
     PanelLimits { min, max: egui::vec2(max_width, 1_000_000.0) }
 }

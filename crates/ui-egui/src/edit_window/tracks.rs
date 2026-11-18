@@ -78,6 +78,8 @@ pub(super) fn track_row(app: &mut SoundApp, ui: &mut Ui, id: TrackId, row: Rect,
     ui.painter().line_segment([pos2(head.min.x, row.max.y + 0.5), pos2(tl.max.x, row.max.y + 0.5)], Stroke::new(1.0, t.border));
     ui.painter().hline(head.min.x + STRIP_W..=head.max.x, head.min.y + 0.5, Stroke::new(1.0, t.edge_light));
     track_header(app, ui, track, head, selected, head_bg);
+    let head_drop = ui.interact(head, ui.scope_id().with(("browser_drop", id.0)), Sense::hover());
+    crate::panels::browser::drop_on_track(app, ui, &head_drop, track);
     // Lane.
     ui.painter().vline(tl.min.x - 0.5, row.y_range(), Stroke::new(1.0, t.border));
     let painter = ui.painter().with_clip_rect(lane.intersect(ui.clip_rect()));

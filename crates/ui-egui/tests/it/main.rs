@@ -8,6 +8,7 @@ mod audio_device;
 mod auto_rename;
 mod bounce;
 mod bounce_dialog;
+mod browser_panel;
 mod clip_gain_fader;
 mod clip_looping;
 mod clip_menu;

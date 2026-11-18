@@ -11,6 +11,7 @@ use soundcraft_ui_egui::{MainWindow, Services, SoundApp};
 fn harness(engine: soundcraft_engine::Engine, window: MainWindow) -> Harness<'static, SoundApp> {
     let mut app = SoundApp::new(engine, None, Services::default());
     app.ui.window = window;
+    super::docking_workflows::close_browser(&mut app.ui);
     app.run("view.edit_inserts_ae", json!({})).unwrap();
     app.run("track.height", json!({"tracks": ["Vox"], "height": "medium"})).unwrap();
     let mut h = Harness::builder().with_size(vec2(1400.0, 1000.0)).build_ui_state(
