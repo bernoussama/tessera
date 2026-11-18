@@ -126,6 +126,8 @@ enum Cmd {
     },
     Stop,
     Locate(Samples),
+    /// A live note for a track's instrument (preview, MIDI input).
+    Note(soundcraft_mix::LiveNote),
     /// Tracks the latest session no longer has (worked out on the UI thread): their meters go.
     Forget(Vec<TrackId>),
 }
@@ -469,6 +471,11 @@ impl Player {
         self.shared.position.store(from, Ordering::Relaxed);
         self.shared.playing.store(true, Ordering::Relaxed);
         let _ = self.tx.send(Cmd::Play { from, end, looped });
+    }
+
+    /// Play (velocity > 0) or release (0) a note on a track's instrument, stopped or playing.
+    pub fn live_note(&self, track: TrackId, pitch: u8, velocity: u8) {
+        let _ = self.tx.send(Cmd::Note(soundcraft_mix::LiveNote { track, pitch, velocity }));
     }
 
     /// Feed live input (from a `record::Recorder`) into the mix for input monitoring.
