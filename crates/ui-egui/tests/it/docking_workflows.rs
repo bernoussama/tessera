@@ -4,6 +4,14 @@ use egui_kittest::{Harness, kittest::Queryable};
 use serde_json::json;
 use soundcraft_ui_egui::{MainWindow, Services, SoundApp, UiState, docking::Panel};
 
+/// Closes the Browser the Edit window now opens with, for the tests whose subject is another panel
+/// or whose queries (labels, positions) the Browser's plug-in rows would otherwise share.
+pub(crate) fn close_browser(state: &mut UiState) {
+    use craft_ui::docking::{Action, Permissions};
+    state.docking.apply(Action::Close { panel: Panel::Browser }, |_| Permissions::default()).unwrap();
+    state.docking.hidden.clear();
+}
+
 /// The earlier default arrangement: Tracks and Groups and Clips in full-height dock columns around
 /// the session view, both lists shown. The tests that drive the dock columns start from it; the
 /// shipped default has neither list.
@@ -13,6 +21,7 @@ pub(crate) fn side_lists_state() -> UiState {
     use soundcraft_ui_egui::docking::{CLIPS_WIDTH, TRACKS_WIDTH};
     let column = |side, panel, width| Node::Dock { side, columns: vec![Column::new(vec![Group::new(vec![panel], 0)], width)] };
     let mut state = UiState::default();
+    close_browser(&mut state);
     if let Some(session) = state.docking.layout.root.take() {
         let right = Node::Split {
             axis: SplitAxis::Horizontal,
@@ -35,9 +44,11 @@ pub(crate) fn side_lists_state() -> UiState {
 pub(crate) fn harness(state: Option<UiState>, width: f32, scale: f32) -> Harness<'static, SoundApp> {
     let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
     app.run("track.new", json!({"name":"Voice"})).unwrap();
-    if let Some(state) = state {
-        app.ui = state;
-    }
+    app.ui = state.unwrap_or_else(|| {
+        let mut state = UiState::default();
+        close_browser(&mut state);
+        state
+    });
     let mut h = Harness::builder().with_size(vec2(width, 900.0)).with_pixels_per_point(scale).build_ui_state(
         |ui, app: &mut SoundApp| {
             app.logic(&ui.ctx().clone());

@@ -10,10 +10,9 @@ use serde_json::json;
 use soundcraft_model::TrackKind;
 use soundcraft_ui_egui::{Services, SoundApp};
 
-/// The Edit window with the Browser open, over `engine`.
+/// The Edit window, which opens with the Browser docked on the left, over `engine`.
 fn harness(engine: soundcraft_engine::Engine) -> Harness<'static, SoundApp> {
-    let mut app = SoundApp::new(engine, None, Services::default());
-    app.run("window.browser", json!({})).unwrap();
+    let app = SoundApp::new(engine, None, Services::default());
     let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).with_step_dt(1.0 / 60.0).build_ui_state(
         |ui, app: &mut SoundApp| {
             app.logic(&ui.ctx().clone());

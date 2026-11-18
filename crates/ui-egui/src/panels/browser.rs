@@ -41,7 +41,14 @@ fn catalog() -> Vec<BrowserItem> {
     let au = soundcraft_au_host::scan().into_iter().map(|d| BrowserItem { id: d.id, name: d.name, source: "AU", instrument: d.is_instrument });
     let mut items: Vec<BrowserItem> = built_in.chain(clap).chain(vst3).chain(au).collect();
     items.sort_by_cached_key(|item| item.name.to_lowercase());
+    dedup_formats(&mut items);
     items
+}
+
+/// Drops a plug-in listed in several formats, keeping the first of the name-sorted `items`. The sort
+/// is stable and `catalog` chains CLAP before VST3 before AU, so the CLAP build wins.
+fn dedup_formats(items: &mut Vec<BrowserItem>) {
+    items.dedup_by(|later, earlier| later.source != "built-in" && earlier.source != "built-in" && later.name.eq_ignore_ascii_case(&earlier.name));
 }
 
 /// Whether a plug-in's name holds the search text (an empty search holds everything).
@@ -80,7 +87,9 @@ pub fn show(app: &mut SoundApp, ui: &mut Ui) {
                 ui.weak(text("Sample browsing is not available yet."));
             });
     });
-    ui.label(RichText::new(text("Drag an instrument into the empty area to make a track.")).font(regular(10.0)).color(t.text_dim));
+    ui.add(
+        egui::Label::new(RichText::new(text("Drag an instrument into the empty area to make a track.")).font(regular(10.0)).color(t.text_dim)).wrap(),
+    );
 }
 
 /// A collapsible category: its header, and its rows while open. `tags` shows each row's source.
@@ -181,4 +190,21 @@ pub(crate) fn is_open(app: &SoundApp) -> bool {
 pub(crate) fn toggle(app: &mut SoundApp) -> Result<Value, String> {
     let operation = if is_open(app) { "close" } else { "open" };
     crate::docking::command(app, "ui.dock", &json!({"operation": operation, "panel": "browser"}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn item(name: &str, source: &'static str) -> BrowserItem {
+        BrowserItem { id: format!("{source}:{name}"), name: name.to_owned(), source, instrument: true }
+    }
+
+    #[test]
+    fn plugin_in_two_formats_is_listed_once_as_clap() {
+        let mut items = vec![item("Surge XT", "CLAP"), item("Surge XT", "VST3"), item("Vital", "VST3")];
+        dedup_formats(&mut items);
+        let kept: Vec<_> = items.iter().map(|i| (i.name.as_str(), i.source)).collect();
+        assert_eq!(kept, [("Surge XT", "CLAP"), ("Vital", "VST3")]);
+    }
 }
