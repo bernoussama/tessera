@@ -1,0 +1,88 @@
+name: Builds
+
+# On every push to main: build the Linux AppImage and attach it to the rolling `latest`
+# pre-release, and build the web version and publish it on GitHub Pages. A pull request that
+# touches packaging or this file builds both without publishing.
+#   AppImage: https://github.com/<owner>/<repo>/releases/download/latest/tessera-x86_64.AppImage
+#   Web:      https://<owner>.github.io/<repo>/
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths: [".github/workflows/builds.yml", "packaging/**", "apps/soundcraft-web/**"]
+  workflow_dispatch:
+
+# One build per branch at a time; a newer push replaces a build still running.
+concurrency:
+  group: builds-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  appimage:
+    # The oldest supported Ubuntu: the AppImage runs on any distro with this glibc (2.35) or newer.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries
+        run: |
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y --no-install-recommends pkg-config libasound2-dev \
+            libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev libxrandr-dev \
+            libxi-dev libfontconfig1-dev libfreetype-dev zsync
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the AppImage
+        run: packaging/linux/package.sh --formats appimage
+      - name: Publish to the `latest` pre-release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          src=$(ls dist/release/*-linux-x86_64.AppImage)
+          cp "$src" tessera-x86_64.AppImage
+          git tag -f latest
+          git push -f origin latest
+          if ! gh release view latest >/dev/null 2>&1; then
+            gh release create latest --prerelease --title "Latest build" \
+              --notes "Built from main on every merge. Download tessera-x86_64.AppImage, chmod +x, run."
+          fi
+          gh release edit latest --notes "Built from main at ${GITHUB_SHA::7} on every merge. Download tessera-x86_64.AppImage, chmod +x, run."
+          gh release upload latest tessera-x86_64.AppImage --clobber
+
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@trunk
+      - name: Build the web version
+        working-directory: apps/soundcraft-web
+        run: trunk build --release
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist/web
+
+  pages:
+    if: github.event_name != 'pull_request'
+    needs: web
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
