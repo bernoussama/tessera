@@ -18,10 +18,11 @@ pub enum Panel {
     Midi,
     Memory,
     History,
+    Browser,
 }
 
 impl Panel {
-    pub const ALL: &[Self] = &[Self::Canvas, Self::Tracks, Self::Clips, Self::Midi, Self::Memory, Self::History];
+    pub const ALL: &[Self] = &[Self::Canvas, Self::Tracks, Self::Clips, Self::Midi, Self::Memory, Self::History, Self::Browser];
     fn label(self) -> &'static str {
         match self {
             Self::Canvas => "Session",
@@ -30,6 +31,7 @@ impl Panel {
             Self::Midi => "MIDI Editor",
             Self::Memory => "Memory Locations",
             Self::History => "Undo History",
+            Self::Browser => "Browser",
         }
     }
 }
@@ -96,6 +98,7 @@ fn default_dock(panel: Panel) -> Option<(Side, f32)> {
     match panel {
         Panel::Tracks => Some((Side::Start, TRACKS_WIDTH)),
         Panel::Clips => Some((Side::End, CLIPS_WIDTH)),
+        Panel::Browser => Some((Side::Start, 170.0)),
         _ => None,
     }
 }
@@ -501,6 +504,7 @@ pub fn show(app: &mut crate::SoundApp, ui: &mut egui::Ui, window: crate::MainWin
             }
             Panel::Memory => crate::panels::memory_locations(app, ui),
             Panel::History => crate::panels::undo_history(app, ui),
+            Panel::Browser => crate::panels::browser::show(app, ui),
         },
     );
     let _ = sync(&mut workspace, app, edit);
@@ -537,6 +541,7 @@ fn panel_limits(panel: &Panel) -> PanelLimits {
         Panel::Midi => (egui::vec2(420.0, 260.0), 1_000_000.0),
         Panel::Memory => (egui::vec2(260.0, 160.0), 1_000_000.0),
         Panel::History => (egui::vec2(200.0, 160.0), 720.0),
+        Panel::Browser => (egui::vec2(140.0, 120.0), 520.0),
     };
     PanelLimits { min, max: egui::vec2(max_width, 1_000_000.0) }
 }

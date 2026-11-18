@@ -191,6 +191,7 @@ fn main_area_content(app: &mut SoundApp, ui: &mut Ui) {
     let empty = Rect::from_min_max(pos2(full.min.x, y.max(tl.min.y)), tl.max);
     if empty.height() > 4.0 {
         let resp = ui.interact(empty, ui.scope_id().with("empty"), Sense::click());
+        crate::panels::browser::drop_on_empty_area(app, ui, &resp);
         if resp.double_clicked() {
             let _ = app.dialogs.open_for_command(&app.engine, "track.new");
         } else if resp.clicked() {
