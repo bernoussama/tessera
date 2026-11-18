@@ -38,9 +38,14 @@ fn dock_columns(h: &egui_kittest::Harness<'_, SoundApp>, side: Side) -> Vec<Colu
 #[test]
 fn default_layouts_show_the_canvas_with_the_midi_editor_below_and_no_side_lists() {
     let edit = docking::edit_default();
-    let canvas_and_midi = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + 26.0), tabs(Panel::Canvas), tabs(Panel::Midi));
-    let expected =
-        split(SplitAxis::Horizontal, SplitSize::FixedFirst(BROWSER_WIDTH), dock(Side::Start, Panel::Browser, BROWSER_WIDTH), canvas_and_midi);
+    let bottom = Node::Tabs { panels: vec![Panel::Midi, Panel::Devices], active: 1 };
+    let canvas_and_bottom = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + 26.0), tabs(Panel::Canvas), bottom);
+    let expected = split(
+        SplitAxis::Horizontal,
+        SplitSize::FixedFirst(BROWSER_WIDTH),
+        dock(Side::Start, Panel::Browser, BROWSER_WIDTH),
+        canvas_and_bottom,
+    );
     assert_eq!(edit.layout.root, Some(expected));
     assert_eq!((TRACKS_WIDTH, CLIPS_WIDTH, MIDI_HEIGHT), (168.0, 230.0, 260.0));
     let mix = docking::mix_default();
