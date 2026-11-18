@@ -249,6 +249,14 @@ fn main() -> eframe::Result {
             b.with_x11();
         }));
     }
+    // Scan CLAP and VST3 plugins up front (on the main thread, which some plugins require), so
+    // the instrument and effect lists hold them from the start. The hosts cache the result.
+    let mut engine = engine;
+    for query in ["engine.clap_plugins", "engine.vst3_plugins"] {
+        if let Err(e) = engine.execute(query, &serde_json::json!({})) {
+            log::warn!("{query}: {e}");
+        }
+    }
     eframe::run_native(
         "SoundCraft",
         options,

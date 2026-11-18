@@ -172,33 +172,71 @@ fn a_selected_video_clip_is_not_a_midi_target() {
     assert!(matches!(clip.content, ClipContent::Midi { .. }));
 }
 
-#[test]
-fn only_pencil_inserts_notes_in_the_midi_roll() {
-    use soundcraft_model::{ClipContent, Tool};
+/// A frame at UI time `time` (seconds), so clicks far enough apart are not a double-click.
+fn frame_at(ctx: &egui::Context, app: &mut SoundApp, time: f64, events: Vec<Event>) {
+    let raw = RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(1600.0, 1000.0))), time: Some(time), events, ..Default::default() };
+    ctx.run_ui(raw, |ui| {
+        app.logic(ui.ctx());
+        app.ui(ui);
+    })
+    .textures_delta
+    .clear();
+}
 
+/// The demo's Keys track with an empty MIDI clip open in the editor, and a point in the roll.
+fn open_empty_clip() -> (SoundApp, egui::Context, u64, Pos2) {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
     let created = app.run("midi.new_clip", json!({"track": "Keys", "start": 0, "length": 96000})).unwrap();
     let clip = created["clip"].as_u64().unwrap();
     app.run("edit.select", json!({"clips": [clip]})).unwrap();
     let ctx = egui::Context::default();
-    for _ in 0..6 {
-        frame(&ctx, &mut app, vec![]);
+    for i in 0..6 {
+        frame_at(&ctx, &mut app, f64::from(i), vec![]);
     }
     let body = panel(&ctx);
-    let point = pos2(body.left() + 200.0, body.top() + 60.0);
+    (app, ctx, clip, pos2(body.left() + 200.0, body.top() + 60.0))
+}
+
+fn note_count(app: &SoundApp, clip: u64) -> usize {
+    let (_, edited) = app.engine.session().find_clip(soundcraft_model::ClipId(clip)).unwrap();
+    let soundcraft_model::ClipContent::Midi { sequence } = &edited.content else { panic!("MIDI clip required") };
+    sequence.notes.len()
+}
+
+#[test]
+fn only_pencil_inserts_notes_on_a_single_click() {
+    use soundcraft_model::Tool;
+
+    let (mut app, ctx, clip, point) = open_empty_clip();
+    let mut t = 10.0;
     for tool in Tool::ALL.into_iter().filter(|tool| *tool != Tool::Pencil).chain([Tool::Pencil]) {
         app.run("edit.tool", json!({"tool": tool.id()})).unwrap();
         let before = app.engine.session().clone();
-        frame(&ctx, &mut app, vec![Event::PointerMoved(point)]);
-        frame(&ctx, &mut app, vec![button(point, true)]);
-        frame(&ctx, &mut app, vec![button(point, false)]);
-        let (_, edited) = app.engine.session().find_clip(soundcraft_model::ClipId(clip)).unwrap();
-        let ClipContent::Midi { sequence } = &edited.content else { panic!("MIDI clip required") };
+        t += 5.0;
+        frame_at(&ctx, &mut app, t, vec![Event::PointerMoved(point)]);
+        frame_at(&ctx, &mut app, t + 0.01, vec![button(point, true)]);
+        frame_at(&ctx, &mut app, t + 0.02, vec![button(point, false)]);
         if tool == Tool::Pencil {
-            assert_eq!(sequence.notes.len(), 1);
+            assert_eq!(note_count(&app, clip), 1);
             app.run("edit.undo", json!({})).unwrap();
         }
         assert!(*app.engine.session() == before, "{tool:?} click must not change the session");
     }
+}
+
+#[test]
+fn double_click_adds_then_removes_a_note_without_the_pencil() {
+    let (mut app, ctx, clip, point) = open_empty_clip();
+    app.run("edit.tool", json!({"tool": soundcraft_model::Tool::Smart.id()})).unwrap();
+    let double_click = |app: &mut SoundApp, t: f64| {
+        frame_at(&ctx, app, t, vec![Event::PointerMoved(point)]);
+        for (i, pressed) in [true, false, true, false].into_iter().enumerate() {
+            frame_at(&ctx, app, t + 0.01 * (i as f64 + 1.0), vec![button(point, pressed)]);
+        }
+    };
+    double_click(&mut app, 20.0);
+    assert_eq!(note_count(&app, clip), 1, "double-click on empty space adds a note");
+    double_click(&mut app, 30.0);
+    assert_eq!(note_count(&app, clip), 0, "double-click on a note removes it");
 }

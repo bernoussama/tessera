@@ -1606,3 +1606,40 @@ fn consolidate_many_tiny_effect_clips_stays_fast() {
     assert!((out[0][1000] - 0.5 * db_to_gain(-6.0)).abs() < 1e-6);
     assert_eq!(out[0][1001], 0.0);
 }
+
+#[test]
+fn a_live_note_sounds_while_stopped_and_rings_out_after_release() {
+    // Previewing a note in the piano roll with the transport stopped: the position stands still,
+    // the instrument must sound, keep its note across blocks, and stop rendering after the tail.
+    let mut s = Session::default();
+    let t = s.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
+    s.track_mut(t).unwrap().instrument = Some(Insert::new("subtractive_synth"));
+    let mut eng = MixEngine::new(48_000.0, 512);
+    eng.monitor_only = true;
+    let peak = |eng: &mut MixEngine| {
+        let mut out = vec![vec![0.0f32; 512]; 2];
+        eng.render(&s, 1_000, 512, &mut out);
+        out[0].iter().fold(0.0f32, |m, x| m.max(x.abs()))
+    };
+    assert_eq!(peak(&mut eng), 0.0, "silent before any note");
+    assert!(!eng.live_active());
+    eng.live_note(LiveNote { track: t, pitch: 60, velocity: 100 });
+    assert!(eng.live_active());
+    peak(&mut eng);
+    // Same position every block (stopped): not a seek, so the note holds.
+    let held: Vec<f32> = (0..20).map(|_| peak(&mut eng)).collect();
+    assert!(held.iter().all(|p| *p > 0.0), "the held note keeps sounding: {held:?}");
+    eng.live_note(LiveNote { track: t, pitch: 60, velocity: 0 });
+    for _ in 0..(strip::LIVE_TAIL / 512 + 2) {
+        peak(&mut eng);
+    }
+    assert!(!eng.live_active(), "the tail ends");
+    assert_eq!(peak(&mut eng), 0.0);
+}
+
+#[test]
+fn a_live_note_for_an_unknown_track_is_ignored() {
+    let mut eng = MixEngine::new(48_000.0, 512);
+    eng.live_note(LiveNote { track: TrackId(999), pitch: 200, velocity: 255 });
+    assert!(!eng.live_active());
+}

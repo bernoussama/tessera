@@ -4,7 +4,7 @@ use crate::SoundApp;
 use crate::theme::{Tokens, bold, regular};
 use egui::{Align2, Color32, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::json;
-use soundcraft_model::{ClipContent, ClipId, Tool};
+use soundcraft_model::{ClipContent, ClipId, Tool, TrackId};
 use soundcraft_time::TICKS_PER_QUARTER;
 
 const KEY_W: f32 = 48.0;
@@ -19,6 +19,45 @@ pub struct MidiEditorState {
     pub clip: Option<ClipId>,
     /// Rubber-band selection start (screen position).
     pub band: Option<egui::Pos2>,
+    /// The note being previewed on the track's instrument.
+    pub preview: Option<Preview>,
+}
+
+/// A previewed note: released at `until` (UI time, seconds), or when the key is let go if `None`.
+#[derive(Debug, Clone, Copy)]
+pub struct Preview {
+    pub track: TrackId,
+    pub pitch: u8,
+    pub until: Option<f64>,
+}
+
+/// How long a clicked or drawn note sounds, in seconds.
+const PREVIEW_SECS: f64 = 0.3;
+
+/// Sound `pitch` on the track's instrument (releasing the previous preview), until `until`.
+fn preview_start(app: &mut SoundApp, track: TrackId, pitch: u8, velocity: u8, until: Option<f64>) {
+    preview_stop(app);
+    if let Some(p) = &app.player {
+        p.live_note(track, pitch, velocity.max(1));
+        app.midi.preview = Some(Preview { track, pitch, until });
+    }
+}
+
+fn preview_stop(app: &mut SoundApp) {
+    if let (Some(pv), Some(p)) = (app.midi.preview.take(), &app.player) {
+        p.live_note(pv.track, pv.pitch, 0);
+    }
+}
+
+/// Release a timed preview once it is due, and keep repainting until then.
+fn preview_tick(app: &mut SoundApp, ui: &Ui) {
+    let Some(until) = app.midi.preview.and_then(|p| p.until) else { return };
+    let now = ui.input(|i| i.time);
+    if now >= until {
+        preview_stop(app);
+    } else {
+        ui.ctx().request_repaint_after(std::time::Duration::from_secs_f64((until - now).max(0.0)));
+    }
 }
 
 impl MidiEditorState {
@@ -129,6 +168,7 @@ pub fn show(app: &mut SoundApp, ui: &mut Ui) {
         bold(11.5),
         t.header_text,
     );
+    preview_tick(app, ui);
     let Some(cid) = target_clip(app) else {
         empty_state(app, ui, full, header);
         return;
@@ -140,7 +180,7 @@ pub fn show(app: &mut SoundApp, ui: &mut Ui) {
         pos2(header.min.x + 110.0, header.center().y),
         Align2::LEFT_CENTER,
         format!(
-            "{} · {} notes · {} selected · Pencil: add · drag: move/select · arrows: move · Delete: remove",
+            "{} · {} notes · {} selected · double-click: add/remove · drag: move/select · arrows: move · Delete: remove",
             clip.name,
             sequence.notes.len(),
             app.midi.selected.len()
@@ -177,7 +217,8 @@ pub fn show(app: &mut SoundApp, ui: &mut Ui) {
     // Notes.
     let base = egui::Color32::from_rgb(track_color[0], track_color[1], track_color[2]);
     draw_notes(app, &painter, &g, base);
-    note_pointer(app, ui, &g, cid, s.edit.tool == Tool::Pencil);
+    note_pointer(app, ui, &g, cid, track, s.edit.tool == Tool::Pencil);
+    piano_keys(app, ui, &g, track);
     note_keys(app, ui, &g, cid);
     velocity_lane(app, ui, &g, cid, base, full.min.x + 6.0);
 }
@@ -339,7 +380,7 @@ fn draw_notes(app: &SoundApp, painter: &egui::Painter, g: &Roll<'_>, base: Color
 }
 
 /// Pointer interaction on the roll: note and band selection, drags and clicks.
-fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, pencil: bool) {
+fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, track: TrackId, pencil: bool) {
     let Roll { sequence, roll, px_per_tick, grid_ticks, .. } = *g;
     // Interaction.
     let resp = ui.interact(roll, ui.scope_id().with(("roll", cid.0)), Sense::click_and_drag());
@@ -400,6 +441,31 @@ fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, penc
             app.midi.selected.clear();
         }
     }
+    let now = ui.input(|i| i.time);
+    let add_note = |app: &mut SoundApp, p: egui::Pos2| {
+        let pitch = g.pitch_at(p.y).clamp(0, 127);
+        let start = (((p.x - roll.min.x) / px_per_tick) as i64 / grid_ticks) * grid_ticks;
+        let _ = app
+            .run("midi.note_add", json!({"clip": cid.0, "pitch": pitch, "start_ticks": start.max(0), "length_ticks": grid_ticks, "velocity": 100}));
+        app.midi.selected.clear();
+        preview_start(app, track, pitch as u8, 100, Some(now + PREVIEW_SECS));
+    };
+    // Double-click: add a note on empty space, remove the note under the pointer. (The Pencil adds
+    // on a single click, so its double-click would delete what the first click drew.)
+    if !pencil
+        && resp.double_clicked()
+        && let Some(p) = resp.interact_pointer_pos()
+    {
+        match g.hit(p) {
+            Some((i, _)) => {
+                preview_stop(app);
+                let _ = app.run("midi.note_delete", json!({"clip": cid.0, "indices": [i]}));
+                app.midi.selected.clear();
+            }
+            None => add_note(app, p),
+        }
+        return;
+    }
     if resp.clicked()
         && let Some(p) = resp.interact_pointer_pos()
     {
@@ -412,19 +478,29 @@ fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, penc
                 } else {
                     app.midi.selected = vec![i];
                 }
-                // Audition on the instrument would go here (needs a live MIDI input path).
+                if let Some(n) = sequence.notes.get(i) {
+                    preview_start(app, track, n.pitch, n.velocity, Some(now + PREVIEW_SECS));
+                }
             }
-            None if pencil => {
-                let pitch = g.pitch_at(p.y).clamp(0, 127);
-                let start = (((p.x - roll.min.x) / px_per_tick) as i64 / grid_ticks) * grid_ticks;
-                let _ = app.run(
-                    "midi.note_add",
-                    json!({"clip": cid.0, "pitch": pitch, "start_ticks": start.max(0), "length_ticks": grid_ticks, "velocity": 100}),
-                );
-                app.midi.selected.clear();
-            }
+            None if pencil => add_note(app, p),
             None => app.midi.selected.clear(),
         }
+    }
+}
+
+/// The keyboard beside the roll: pressing a key plays its note until released.
+fn piano_keys(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, track: TrackId) {
+    let resp = ui.interact(g.keys, ui.scope_id().with("piano_keys"), Sense::click_and_drag());
+    if resp.is_pointer_button_down_on()
+        && let Some(p) = ui.ctx().pointer_latest_pos()
+    {
+        let pitch = g.pitch_at(p.y).clamp(0, 127) as u8;
+        if app.midi.preview.is_none_or(|pv| pv.pitch != pitch || pv.until.is_some()) {
+            let vel = (((p.x - g.keys.min.x) / KEY_W).clamp(0.2, 1.0) * 127.0) as u8;
+            preview_start(app, track, pitch, vel, None);
+        }
+    } else if app.midi.preview.is_some_and(|pv| pv.until.is_none()) {
+        preview_stop(app);
     }
 }
 

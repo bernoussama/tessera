@@ -106,6 +106,15 @@ pub fn main_channels(s: &Session) -> usize {
     s.main_format().channels().clamp(MAIN_CHANNELS, MAX_CHANNELS)
 }
 
+/// A note played live on a track's instrument (preview or MIDI input), outside any clip.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LiveNote {
+    pub track: TrackId,
+    pub pitch: u8,
+    /// 0 is a note-off.
+    pub velocity: u8,
+}
+
 /// Renders sessions. Keep one per playback stream; plugin state persists across blocks.
 pub struct MixEngine {
     sample_rate: f32,
@@ -257,6 +266,8 @@ impl MixEngine {
                 i.failed = false;
             }
             s.held.clear();
+            s.live_held.clear();
+            s.live_tail = 0;
             s.chase = true;
             s.align.clear();
             s.align_pre.clear();
@@ -362,6 +373,29 @@ impl MixEngine {
         }
     }
 
+    /// Play or release a live note on the track's instrument now (it sounds from the next block,
+    /// stopped or playing). Unknown tracks and tracks without an instrument ignore it.
+    pub fn live_note(&mut self, n: LiveNote) {
+        let Some(st) = self.strips.get_mut(&n.track) else { return };
+        let Some(inst) = st.instrument.as_mut().filter(|i| !i.failed) else { return };
+        let pitch = n.pitch.min(127);
+        if n.velocity == 0 {
+            inst.plugin.note_off(0, pitch);
+            st.live_held.retain(|p| *p != pitch);
+        } else {
+            inst.plugin.note_on(0, pitch, n.velocity.min(127));
+            if !st.live_held.contains(&pitch) && st.live_held.len() < 128 {
+                st.live_held.push(pitch);
+            }
+        }
+        st.live_tail = strip::LIVE_TAIL;
+    }
+
+    /// Some instrument is sounding live notes or ringing out after them.
+    pub fn live_active(&self) -> bool {
+        self.strips.values().any(|s| s.live_tail > 0)
+    }
+
     /// Render `frames` (≤ max_block) samples starting at `pos` into `out` (≥ 2 channels).
     pub fn render(&mut self, s: &Session, pos: Samples, frames: usize, out: &mut [Vec<f32>]) {
         let frames = frames.min(self.max_block);
@@ -403,7 +437,8 @@ impl MixEngine {
 
     /// Silence what a seek leaves ringing, sync to the session and clear the block's accumulators.
     fn begin_block(&mut self, s: &Session, pos: Samples, frames: usize) {
-        if pos != self.last_end {
+        // Stopped, the position stands still: that is not a seek, and live notes must keep sounding.
+        if pos != self.last_end && !self.monitor_only {
             // Seek: silence held notes and ringing plugins.
             for st in self.strips.values_mut() {
                 if let Some(i) = &mut st.instrument {
