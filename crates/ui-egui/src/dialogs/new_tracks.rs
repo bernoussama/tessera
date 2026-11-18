@@ -127,8 +127,9 @@ impl NewTracks {
                         }
                     }
                     Key::ArrowUp | Key::ArrowDown => {
-                        let index = TrackKind::ALL.iter().position(|k| k.id() == row.kind).unwrap_or(0);
-                        if let Some(next) = TrackKind::ALL.get(cycle_index(index, TrackKind::ALL.len(), forward)) {
+                        let kinds = offered_kinds();
+                        let index = kinds.iter().position(|k| k.id() == row.kind).unwrap_or(0);
+                        if let Some(next) = kinds.get(cycle_index(index, kinds.len(), forward)) {
                             set_new_track_kind(&mut row.kind, &mut row.name, *next);
                         }
                     }
@@ -202,7 +203,7 @@ impl NewTracks {
                         .width(widths.kind)
                         .selected_text(crate::localization::text(TrackKind::from_id(&row.kind).map_or("Audio Track", |k| k.label())))
                         .show_ui(ui, |ui| {
-                            for k in TrackKind::ALL {
+                            for k in offered_kinds() {
                                 if ui.selectable_label(row.kind == k.id(), crate::localization::text(k.label())).clicked() {
                                     set_new_track_kind(&mut row.kind, &mut row.name, k);
                                 }
@@ -320,6 +321,12 @@ fn styled_text_width(ui: &Ui, text: &str, style: &TextStyle) -> f32 {
 fn combo_width<'a>(ui: &Ui, labels: impl Iterator<Item = &'a str>) -> f32 {
     let longest = labels.map(|s| text_width(ui, s)).fold(0.0, f32::max);
     (longest + ui.spacing().icon_width + ui.spacing().icon_spacing + 2.0 * ui.spacing().button_padding.x + 2.0).ceil()
+}
+
+/// The kinds a new track can be. A bare MIDI track (no instrument) makes no sound, which only
+/// confuses: instrument tracks carry the MIDI. Sessions that already hold MIDI tracks keep them.
+fn offered_kinds() -> Vec<TrackKind> {
+    TrackKind::ALL.into_iter().filter(|k| *k != TrackKind::Midi).collect()
 }
 
 /// Changes kind and updates the default name without replacing a custom name.

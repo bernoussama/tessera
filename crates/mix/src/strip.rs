@@ -57,7 +57,15 @@ pub(crate) struct Strip {
     pub(crate) out_extra: DelayLine,
     pub(crate) outbuf: Vec<Vec<f32>>,
     pub(crate) failures: PluginFailures,
+    /// Live notes (preview, MIDI input) sounding on the instrument (pitch).
+    pub(crate) live_held: Vec<u8>,
+    /// Frames the instrument keeps rendering while stopped, so a live note's release rings out.
+    pub(crate) live_tail: usize,
 }
+
+/// How long an instrument keeps rendering after its last live note while stopped (frames at
+/// 48 kHz scale; ~4 s), so release tails and effect tails are heard.
+pub(crate) const LIVE_TAIL: usize = 192_000;
 
 /// Most latency delay compensation handles: 2^20 samples, about 22 s at 48 kHz. A strip reports
 /// at most this, whatever its plugins claim, so a bogus value can't stall offline renders.
@@ -151,6 +159,8 @@ impl Strip {
             out_extra: DelayLine::default(),
             outbuf: Vec::new(),
             failures: PluginFailures::default(),
+            live_held: Vec::new(),
+            live_tail: 0,
         }
     }
 }
@@ -294,6 +304,22 @@ fn read_aux_bus(t: &Track, strip: &mut Strip, busses: &HashMap<BusId, BusBuf>, f
     }
 }
 
+/// Run the instrument over the strip buffer; a mono strip renders in stereo and folds.
+fn process_instrument(inst: &mut PluginSlot, buf: &mut [Vec<f32>], scratch: &mut Vec<f32>, frames: usize) {
+    if buf.len() >= 2 {
+        inst.plugin.process(buf, frames);
+    } else if let Some(c0) = buf.first_mut() {
+        let mut st = [std::mem::take(c0), std::mem::take(scratch)];
+        inst.plugin.process(&mut st, frames);
+        let [a, b] = st;
+        *c0 = a;
+        *scratch = b;
+        for (x, y) in c0.iter_mut().zip(scratch.iter()).take(frames) {
+            *x = 0.5 * (*x + *y);
+        }
+    }
+}
+
 /// Render the track's instrument into the strip.
 fn render_instrument(s: &Session, t: &Track, strip: &mut Strip, blk: Block, transport: &Transport) {
     let Block { pos, frames, .. } = blk;
@@ -311,22 +337,27 @@ fn render_instrument(s: &Session, t: &Track, strip: &mut Strip, blk: Block, tran
             chase_controllers(s, t, pos, inst);
         }
         schedule_notes(s, t, pos, frames, inst, &mut strip.held);
-        if strip.buf.len() >= 2 {
-            inst.plugin.process(&mut strip.buf, frames);
-        } else if let Some(c0) = strip.buf.first_mut() {
-            // Mono MIDI track: render the instrument in stereo and fold.
-            let mut st = [std::mem::take(c0), std::mem::take(&mut strip.scratch)];
-            inst.plugin.process(&mut st, frames);
-            let [a, b] = st;
-            *c0 = a;
-            strip.scratch = b;
-            for (x, y) in c0.iter_mut().zip(strip.scratch.iter()).take(frames) {
-                *x = 0.5 * (*x + *y);
-            }
-        }
+        process_instrument(inst, strip.buf.as_mut_slice(), &mut strip.scratch, frames);
         if contain_failure(inst, &mut strip.buf, frames) {
             strip.failures.record(INSTRUMENT_SLOT);
         }
+    }
+}
+
+/// Stopped transport: render the instrument only while live notes sound or their tail rings.
+fn render_live_instrument(t: &Track, strip: &mut Strip, blk: Block, transport: &Transport) {
+    if strip.live_tail == 0 {
+        return;
+    }
+    strip.live_tail = if strip.live_held.is_empty() { strip.live_tail.saturating_sub(blk.frames) } else { LIVE_TAIL };
+    let Some(inst) = strip.instrument.as_mut().filter(|i| !i.failed) else { return };
+    if let Some(ins) = &t.instrument {
+        apply_params(inst, ins, t, INSTRUMENT_SLOT, blk.pos);
+    }
+    inst.plugin.set_transport(transport);
+    process_instrument(inst, strip.buf.as_mut_slice(), &mut strip.scratch, blk.frames);
+    if contain_failure(inst, &mut strip.buf, blk.frames) {
+        strip.failures.record(INSTRUMENT_SLOT);
     }
 }
 
@@ -410,7 +441,7 @@ pub(crate) fn process_strip(s: &Session, t: &Track, strip: &mut Strip, busses: &
             monitor_input(t, strip, live, frames);
         }
         TrackKind::Audio if live.monitor_only => {}
-        TrackKind::Instrument | TrackKind::Midi if live.monitor_only => {}
+        TrackKind::Instrument | TrackKind::Midi if live.monitor_only => render_live_instrument(t, strip, blk, &transport),
         TrackKind::Audio => render_audio_clips(s, t, strip, blk),
         TrackKind::Aux | TrackKind::Folder => read_aux_bus(t, strip, busses, frames),
         TrackKind::Instrument | TrackKind::Midi => render_instrument(s, t, strip, blk, &transport),
