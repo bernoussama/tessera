@@ -37,10 +37,19 @@ jobs:
       - uses: actions/checkout@v4
       - run: echo "cores=$(nproc)"
       # Cached .debs: `apt-get update` alone has taken minutes on a slow mirror.
-      - uses: awalsh128/cache-apt-pkgs-action@v1
+      # The Ubuntu mirror is sometimes very slow (minutes for one package), so the downloaded
+      # .debs are cached; apt still installs them normally.
+      - uses: actions/cache@v4
         with:
-          packages: ${{ env.APT_PACKAGES }}
-          version: 1
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-
+      - name: System libraries
+        run: |
+          mkdir -p ~/apt-archives/partial
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$HOME/apt-archives" $APT_PACKAGES
+          sudo chown -R "$USER" ~/apt-archives
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -56,10 +65,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: echo "cores=$(nproc)"
-      - uses: awalsh128/cache-apt-pkgs-action@v1
+      # The Ubuntu mirror is sometimes very slow (minutes for one package), so the downloaded
+      # .debs are cached; apt still installs them normally.
+      - uses: actions/cache@v4
         with:
-          packages: ${{ env.APT_PACKAGES }}
-          version: 1
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-
+      - name: System libraries
+        run: |
+          mkdir -p ~/apt-archives/partial
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$HOME/apt-archives" $APT_PACKAGES
+          sudo chown -R "$USER" ~/apt-archives
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
