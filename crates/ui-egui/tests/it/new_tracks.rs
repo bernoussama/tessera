@@ -12,7 +12,8 @@ fn harness(tracks: usize) -> Harness<'static, SoundApp> {
     if tracks > 0 {
         engine.execute("track.new", &serde_json::json!({"count": tracks})).unwrap();
     }
-    let app = SoundApp::new(engine, None, Services::default());
+    let mut app = SoundApp::new(engine, None, Services::default());
+    app.run("ui.dock", serde_json::json!({"operation": "open", "panel": "tracks"})).unwrap();
     let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).with_step_dt(1.0 / 60.0).build_ui_state(
         |ui, app: &mut SoundApp| {
             app.logic(&ui.ctx().clone());

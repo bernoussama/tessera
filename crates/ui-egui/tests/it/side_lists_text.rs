@@ -8,6 +8,7 @@ use soundcraft_ui_egui::{Services, SoundApp};
 
 fn harness() -> Harness<'static, SoundApp> {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.run("ui.dock", json!({"operation": "open", "panel": "tracks"})).unwrap();
     let first = app.engine.session().tracks.first().map(|t| t.id.0).unwrap_or_default();
     app.run("track.rename", json!({"track": first, "name": LONG_TRACK})).unwrap();
     app.run("track.group", json!({"name": LONG_GROUP, "tracks": [first]})).unwrap();

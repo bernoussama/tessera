@@ -39,6 +39,7 @@ fn first_row(h: &Harness<'_, SoundApp>) -> Rect {
 #[test]
 fn the_tracks_gutter_pages_a_long_list() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.run("ui.dock", json!({"operation": "open", "panel": "tracks"})).unwrap();
     app.run("track.new", json!({"count": 60})).unwrap();
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_ui_state(
         |ui, app: &mut SoundApp| {

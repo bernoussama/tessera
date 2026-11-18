@@ -15,7 +15,9 @@ impl Rig {
     fn new() -> Rig {
         let mut engine = soundcraft_engine::Engine::default();
         engine.execute("track.new", &json!({"count": 6})).unwrap();
-        let mut r = Rig { ctx: egui::Context::default(), app: SoundApp::new(engine, None, Services::default()), shapes: Vec::new() };
+        let mut app = SoundApp::new(engine, None, Services::default());
+        app.run("ui.dock", json!({"operation": "open", "panel": "tracks"})).unwrap();
+        let mut r = Rig { ctx: egui::Context::default(), app, shapes: Vec::new() };
         for _ in 0..4 {
             r.frame(vec![]);
         }

@@ -104,7 +104,8 @@ fn tool_and_record_buttons_handle_keyboard_disabled_state_and_cancelled_clicks()
 
 #[test]
 fn toolbar_keyboard_activation_changes_tools_without_transport_or_marker_actions() {
-    let app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
+    let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
+    app.ui.show_edit_tools = true;
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_ui_state(
         |ui, app: &mut SoundApp| {
             app.logic(&ui.ctx().clone());

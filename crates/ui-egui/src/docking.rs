@@ -38,8 +38,8 @@ impl Panel {
 pub const TRACKS_WIDTH: f32 = 168.0;
 /// Width of the Clips column in the end dock.
 pub const CLIPS_WIDTH: f32 = 230.0;
-/// Height of the MIDI editor's body under the session view.
-pub const MIDI_HEIGHT: f32 = 320.0;
+/// Height of the MIDI editor's body docked under the session view.
+pub const MIDI_HEIGHT: f32 = 260.0;
 
 /// An Edit or Mix panel arrangement, saved with the UI preferences.
 pub type Workspace = craft_ui::docking::Workspace<Panel>;
@@ -100,17 +100,12 @@ fn default_dock(panel: Panel) -> Option<(Side, f32)> {
     }
 }
 
-/// The Edit window's built-in arrangement: Tracks and Groups in a full-height start dock,
-/// Clips in a full-height end dock, and the MIDI editor under the session view between them.
+/// The Edit window's built-in arrangement: the document view in the centre, with the MIDI editor
+/// docked along the bottom. Tracks and Groups, Clips, Memory Locations and Undo History start
+/// closed; the Window menu opens them.
 pub fn edit_default() -> Workspace {
-    let session = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + MIDI_TAB_HEIGHT), tabs(Panel::Canvas), tabs(Panel::Midi));
     Workspace::new(Layout {
-        root: Some(split(
-            SplitAxis::Horizontal,
-            SplitSize::FixedFirst(TRACKS_WIDTH),
-            dock(Side::Start, Panel::Tracks, TRACKS_WIDTH),
-            split(SplitAxis::Horizontal, SplitSize::FixedSecond(CLIPS_WIDTH), session, dock(Side::End, Panel::Clips, CLIPS_WIDTH)),
-        )),
+        root: Some(split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + MIDI_TAB_HEIGHT), tabs(Panel::Canvas), tabs(Panel::Midi))),
         floating: default_floating(),
     })
 }
@@ -129,13 +124,15 @@ pub fn mix_default() -> Workspace {
     })
 }
 
-/// The version of the saved panel layouts, kept in [`crate::UiState::docking_version`]. Version 1
-/// has Tracks and Groups and Clips in dock columns; settings without a version have split frames.
-pub const LAYOUT_VERSION: u32 = 1;
+/// The version of the saved panel layouts, kept in [`crate::UiState::docking_version`]. Version 2
+/// has the MIDI editor docked under the document view; version 1 had Tracks and Groups and Clips
+/// in dock columns, and settings without a version have split frames.
+pub const LAYOUT_VERSION: u32 = 2;
 
 /// Drop the panel layouts (with their hidden panels) from saved [`crate::UiState`] settings older
-/// than [`LAYOUT_VERSION`], before they are read, so they load as the default layouts. Every other
-/// setting stays. Preferences and window configurations go through this.
+/// than [`LAYOUT_VERSION`], before they are read, so they load as the default layouts. The panel
+/// visibility flags go too, so the new defaults decide what starts open. Every other setting
+/// stays. Preferences and window configurations go through this.
 pub fn reset_old_layouts(saved: &mut Value) {
     let Some(fields) = saved.as_object_mut() else { return };
     if fields.get("docking_version").and_then(Value::as_u64).is_some_and(|version| version >= u64::from(LAYOUT_VERSION)) {
@@ -143,6 +140,9 @@ pub fn reset_old_layouts(saved: &mut Value) {
     }
     fields.remove("docking");
     fields.remove("mix_docking");
+    for flag in ["show_tracks_list", "show_clip_list", "show_midi_editor"] {
+        fields.remove(flag);
+    }
     fields.insert("docking_version".into(), json!(LAYOUT_VERSION));
 }
 

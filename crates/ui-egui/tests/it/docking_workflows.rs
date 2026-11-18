@@ -4,6 +4,34 @@ use egui_kittest::{Harness, kittest::Queryable};
 use serde_json::json;
 use soundcraft_ui_egui::{MainWindow, Services, SoundApp, UiState, docking::Panel};
 
+/// The earlier default arrangement: Tracks and Groups and Clips in full-height dock columns around
+/// the session view, both lists shown. The tests that drive the dock columns start from it; the
+/// shipped default has neither list.
+pub(crate) fn side_lists_state() -> UiState {
+    use craft_ui::docking::{Column, Group, Node, Side};
+    use craft_ui::layout::{SplitAxis, SplitSize};
+    use soundcraft_ui_egui::docking::{CLIPS_WIDTH, TRACKS_WIDTH};
+    let column = |side, panel, width| Node::Dock { side, columns: vec![Column::new(vec![Group::new(vec![panel], 0)], width)] };
+    let mut state = UiState::default();
+    if let Some(session) = state.docking.layout.root.take() {
+        let right = Node::Split {
+            axis: SplitAxis::Horizontal,
+            size: SplitSize::FixedSecond(CLIPS_WIDTH),
+            first: Box::new(session),
+            second: Box::new(column(Side::End, Panel::Clips, CLIPS_WIDTH)),
+        };
+        state.docking.layout.root = Some(Node::Split {
+            axis: SplitAxis::Horizontal,
+            size: SplitSize::FixedFirst(TRACKS_WIDTH),
+            first: Box::new(column(Side::Start, Panel::Tracks, TRACKS_WIDTH)),
+            second: Box::new(right),
+        });
+    }
+    state.show_tracks_list = true;
+    state.show_clip_list = true;
+    state
+}
+
 pub(crate) fn harness(state: Option<UiState>, width: f32, scale: f32) -> Harness<'static, SoundApp> {
     let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
     app.run("track.new", json!({"name":"Voice"})).unwrap();
@@ -39,7 +67,7 @@ pub(crate) fn drag(h: &mut Harness<'_, SoundApp>, from: egui::Pos2, to: egui::Po
 /// after switching windows.
 #[test]
 fn real_drag_float_close_reopen_reload_retains_transport_and_mixer_commands() {
-    let mut h = harness(None, 1400.0, 1.0);
+    let mut h = harness(Some(UiState { show_edit_tools: true, ..side_lists_state() }), 1400.0, 1.0);
     let source = h.get_by_role_and_label(egui::accesskit::Role::Tab, "Clips").rect().center();
     let target = h.get_by_role_and_label(egui::accesskit::Role::Tab, "Tracks and Groups").rect().center();
     drag(&mut h, source, target);
@@ -95,7 +123,7 @@ fn real_drag_float_close_reopen_reload_retains_transport_and_mixer_commands() {
 
 #[test]
 fn activating_a_hidden_panel_shows_it_and_its_window_flag() {
-    let mut h = harness(None, 1400.0, 1.0);
+    let mut h = harness(Some(side_lists_state()), 1400.0, 1.0);
     h.state_mut().run("ui.dock", json!({"operation":"close","panel":"tracks"})).unwrap();
     h.run_steps(4);
     assert!(!h.state().ui.show_tracks_list);
@@ -132,7 +160,7 @@ fn docking_renders_edit_and_mix_default_floating_and_redocked() {
     for width in [1000.0, 1400.0] {
         for scale in [1.0, 2.0] {
             for window in [MainWindow::Edit, MainWindow::Mix] {
-                let mut h = harness(Some(UiState { window, ..Default::default() }), width, scale);
+                let mut h = harness(Some(UiState { window, ..side_lists_state() }), width, scale);
                 h.state_mut().engine = soundcraft_engine::demo::demo_engine();
                 for state in ["default", "floating", "redocked"] {
                     if state == "floating" {
@@ -164,6 +192,7 @@ fn reset_is_enabled_and_resolves_in_native_and_in_window_menu_trees() {
     let window = tree.iter().find(|node| node.label == "Window").unwrap();
     assert!(window.children.iter().any(|node| node.path == path));
     assert!(menus::item_state(&app, path, Some("ui.dock.reset")).0);
+    app.run("ui.dock", json!({"operation":"open","panel":"tracks"})).unwrap();
     app.run("ui.dock", json!({"operation":"float","panel":"tracks","rect":[50,60,260,420]})).unwrap();
     menus::invoke_menu(&mut app, "ui.dock.reset", path);
     assert!(!app.ui.docking.layout.floating.iter().any(|group| group.contains(&Panel::Tracks)));
@@ -223,7 +252,7 @@ fn a_floating_window_saved_in_the_one_group_shape_keeps_it_when_written_back() {
 #[test]
 fn dragging_a_group_by_its_drag_bar_joins_it_to_another_group() {
     use craft_ui::docking::{DockArea, Hit};
-    let mut h = harness(None, 1400.0, 1.0);
+    let mut h = harness(Some(side_lists_state()), 1400.0, 1.0);
     let root = h.state().ui.docking.layout.root.clone().unwrap();
     assert_eq!(docked_group(&root, Panel::Tracks), Some(vec![Panel::Tracks]));
     let hits = DockArea::<Panel>::hit_rects(&h.ctx, soundcraft_ui_egui::docking::area_id(MainWindow::Edit));

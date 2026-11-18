@@ -8,7 +8,7 @@ use serde_json::json;
 use soundcraft_ui_egui::docking::{self, CLIPS_WIDTH, MIDI_HEIGHT, Panel, TRACKS_WIDTH};
 use soundcraft_ui_egui::{MainWindow, Services, SoundApp, UiState};
 
-use super::docking_workflows::{drag, harness};
+use super::docking_workflows::{drag, harness, side_lists_state};
 
 fn tabs(panel: Panel) -> Node<Panel> {
     Node::Tabs { panels: vec![panel], active: 0 }
@@ -36,17 +36,11 @@ fn dock_columns(h: &egui_kittest::Harness<'_, SoundApp>, side: Side) -> Vec<Colu
 }
 
 #[test]
-fn default_layouts_put_the_side_lists_in_full_height_dock_columns() {
+fn default_layouts_show_the_canvas_with_the_midi_editor_below_and_no_side_lists() {
     let edit = docking::edit_default();
-    let session = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + 26.0), tabs(Panel::Canvas), tabs(Panel::Midi));
-    let expected = split(
-        SplitAxis::Horizontal,
-        SplitSize::FixedFirst(TRACKS_WIDTH),
-        dock(Side::Start, Panel::Tracks, TRACKS_WIDTH),
-        split(SplitAxis::Horizontal, SplitSize::FixedSecond(CLIPS_WIDTH), session, dock(Side::End, Panel::Clips, CLIPS_WIDTH)),
-    );
+    let expected = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + 26.0), tabs(Panel::Canvas), tabs(Panel::Midi));
     assert_eq!(edit.layout.root, Some(expected));
-    assert_eq!((TRACKS_WIDTH, CLIPS_WIDTH, MIDI_HEIGHT), (168.0, 230.0, 320.0));
+    assert_eq!((TRACKS_WIDTH, CLIPS_WIDTH, MIDI_HEIGHT), (168.0, 230.0, 260.0));
     let mix = docking::mix_default();
     assert_eq!(
         mix.layout.root,
@@ -60,17 +54,14 @@ fn default_layouts_put_the_side_lists_in_full_height_dock_columns() {
     docking::validate(&edit).unwrap();
     docking::validate_mix(&mix).unwrap();
 
-    // Drawn: the docks run the window's height at its sides, and the MIDI editor sits under the
-    // session view between them.
-    let width = 1400.0;
-    let mut h = harness(Some(UiState { show_midi_editor: true, ..Default::default() }), width, 1.0);
+    // Drawn: the MIDI editor runs along the bottom, and the side lists start closed.
+    let mut h = harness(None, 1400.0, 1.0);
     h.run_steps(3);
-    let tracks = h.get_by_role_and_label(Role::Tab, "Tracks and Groups").rect();
-    let clips = h.get_by_role_and_label(Role::Tab, "Clips").rect();
+    let state = &h.state().ui;
+    assert!(state.show_midi_editor && !state.show_tracks_list && !state.show_clip_list);
+    assert!(h.query_by_role_and_label(Role::Tab, "Tracks and Groups").is_none() && h.query_by_role_and_label(Role::Tab, "Clips").is_none());
     let midi = h.ctx.data(|data| data.get_temp::<Rect>(egui::Id::unique("soundcraft-midi-body"))).unwrap();
-    assert!(tracks.left() < TRACKS_WIDTH && clips.right() > width - CLIPS_WIDTH, "tracks {tracks:?}, clips {clips:?}");
-    assert!(midi.left() >= TRACKS_WIDTH && midi.right() <= width - CLIPS_WIDTH, "midi {midi:?}");
-    assert!((midi.height() - MIDI_HEIGHT).abs() < 1.0 && midi.top() > clips.bottom(), "midi {midi:?}");
+    assert!((midi.height() - MIDI_HEIGHT).abs() < 1.0 && midi.left() < 20.0 && midi.right() > 1380.0, "midi {midi:?}");
 }
 
 /// The Tracks group's body in the start dock: below its tab strip, down to the column's foot.
@@ -89,7 +80,7 @@ fn tracks_body(h: &egui_kittest::Harness<'_, SoundApp>) -> Rect {
 
 #[test]
 fn a_tab_dropped_on_a_dock_group_joins_it_in_the_middle_and_stacks_below_in_the_lower_third() {
-    let mut h = harness(None, 1400.0, 1.0);
+    let mut h = harness(Some(side_lists_state()), 1400.0, 1.0);
     let body = tracks_body(&h);
     let clips = h.get_by_role_and_label(Role::Tab, "Clips").rect().center();
     drag(&mut h, clips, body.center());
@@ -99,7 +90,7 @@ fn a_tab_dropped_on_a_dock_group_joins_it_in_the_middle_and_stacks_below_in_the_
     );
     assert!(dock_columns(&h, Side::End).is_empty(), "the emptied end dock goes");
 
-    let mut h = harness(None, 1400.0, 1.0);
+    let mut h = harness(Some(side_lists_state()), 1400.0, 1.0);
     let body = tracks_body(&h);
     let clips = h.get_by_role_and_label(Role::Tab, "Clips").rect().center();
     drag(&mut h, clips, egui::pos2(body.center().x, body.bottom() - body.height() / 6.0));
@@ -121,7 +112,7 @@ fn a_panel_without_a_recorded_place_reopens_at_its_default_place() {
     // Both docks gone: each list makes its dock again, at its default width. The MIDI editor
     // opens under the session view, and Memory Locations and Undo History float where they
     // start.
-    let mut state = UiState::default();
+    let mut state = side_lists_state();
     for panel in [Panel::Tracks, Panel::Clips, Panel::Midi, Panel::Memory, Panel::History] {
         close(&mut state, panel);
     }
@@ -146,7 +137,7 @@ fn a_panel_without_a_recorded_place_reopens_at_its_default_place() {
     docking::validate(&h.state().ui.docking).unwrap();
 
     // A dock that is still shown takes the list into its first group.
-    let mut state = UiState::default();
+    let mut state = side_lists_state();
     state
         .docking
         .apply(
@@ -175,7 +166,7 @@ fn a_panel_without_a_recorded_place_reopens_at_its_default_place() {
 fn a_recorded_place_whose_anchor_is_gone_reopens_at_its_default_place() {
     use craft_ui::docking::{Action, Permissions, Placement, Zone};
     let allow = |_: &Panel| Permissions::default();
-    let mut state = UiState::default();
+    let mut state = side_lists_state();
     // Stale saved locations: their recorded anchor closed without leaving a place to follow.
     for panel in [Panel::Clips, Panel::Midi, Panel::Tracks] {
         state.docking.apply(Action::Close { panel }, allow).unwrap();
@@ -251,6 +242,7 @@ fn split_frame_settings_load_as_the_dock_defaults_and_dock_layouts_round_trip() 
 
     // A configuration saved before dock columns resets the same way when recalled.
     let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
+    app.run("ui.dock", json!({"operation":"open","panel":"tracks"})).unwrap();
     app.run("ui.dock", json!({"operation":"float","panel":"tracks","rect":[80,90,260,400]})).unwrap();
     app.ui.configurations = vec![("Old".into(), split_frame_settings())];
     soundcraft_ui_egui::windows::recall_configuration(&mut app, &split_frame_settings()).unwrap();
@@ -259,7 +251,7 @@ fn split_frame_settings_load_as_the_dock_defaults_and_dock_layouts_round_trip() 
     assert!(app.ui.narrow_mix && app.ui.configurations.len() == 1);
 
     // A dock layout comes back as it was saved, and drawing it does not rearrange it.
-    let mut h = harness(Some(UiState { show_undo_history: true, ..Default::default() }), 1400.0, 1.0);
+    let mut h = harness(Some(UiState { show_undo_history: true, ..side_lists_state() }), 1400.0, 1.0);
     h.state_mut().run("ui.dock", json!({"operation":"move","panel":"clips","target":"tracks","zone":"bottom"})).unwrap();
     h.state_mut().run("ui.dock", json!({"operation":"float","panel":"history","rect":[500,200,260,300]})).unwrap();
     h.run_steps(4);
@@ -282,7 +274,7 @@ fn split_frame_settings_load_as_the_dock_defaults_and_dock_layouts_round_trip() 
 
 #[test]
 fn a_floating_list_closed_beside_its_shown_dock_reopens_floating() {
-    let mut h = harness(None, 1400.0, 1.0);
+    let mut h = harness(Some(side_lists_state()), 1400.0, 1.0);
     // Tracks joins Clips in the end dock, so the end dock stays shown after Clips floats.
     h.state_mut().run("ui.dock", json!({"operation":"move","panel":"tracks","target":"clips","zone":"center"})).unwrap();
     h.state_mut().run("ui.dock", json!({"operation":"float","panel":"clips","rect":[300,200,260,320]})).unwrap();

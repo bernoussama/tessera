@@ -2,7 +2,7 @@ use super::layout::STRIP_W;
 use super::tracks::{click_track, folder_depth, height_targets, in_edit_window, track_context_menu, view_label, view_menu};
 use super::{
     Align2, AutoParam, Color32, Gesture, Pos2, Rect, Sense, Shape, SoundApp, Stroke, StrokeKind, Tokens, Track, TrackHeight, TrackId, TrackKind, Ui,
-    bold, groove, json, level_pos, meter_pos, pos2, raised_key, regular, rgb, shade, vec2,
+    bold, groove, json, level_pos, meter_pos, pos2, raised_key, regular, shade, vec2,
 };
 
 /// Draw one track header: resize edge, selection and context menu, folder/options control, automation-lane toggle,
@@ -87,7 +87,7 @@ fn strip_buttons(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect) {
     let id = track.id;
     let h = head.height();
     let at = |x: f32, y: f32, w: f32, h: f32| Rect::from_min_size(pos2(head.min.x + x, head.min.y + y), vec2(w, h));
-    let strip = rgb(track.color);
+    let strip = crate::theme::track_rgb(track.color);
     let ink = shade(strip, -0.8);
     let round = at(2.0, 2.0, 10.0, 10.0);
     let rresp = ui.interact(round, ui.scope_id().with(("options", id.0)), Sense::click());

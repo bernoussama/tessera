@@ -16,6 +16,7 @@ pub const UPDATE_APP: craft_update::app::App = craft_update::app::App {
 pub mod appearance;
 pub mod bounce;
 pub mod control;
+mod cpu;
 pub mod credits;
 pub mod dialogs;
 pub mod docking;
@@ -82,6 +83,8 @@ pub struct UiState {
     pub window: MainWindow,
     pub show_tracks_list: bool,
     pub show_clip_list: bool,
+    /// The full edit tools bar (modes, tools, grid, counters) in place of the control bar.
+    pub show_edit_tools: bool,
     pub show_transport: bool,
     pub show_memory_locations: bool,
     pub show_big_counter: bool,
@@ -166,8 +169,9 @@ impl Default for UiState {
             mix_docking: docking::mix_default(),
             docking_version: docking::LAYOUT_VERSION,
             window: MainWindow::Edit,
-            show_tracks_list: true,
-            show_clip_list: true,
+            show_tracks_list: false,
+            show_clip_list: false,
+            show_edit_tools: false,
             show_transport: false,
             show_memory_locations: false,
             show_big_counter: false,
@@ -175,7 +179,7 @@ impl Default for UiState {
             show_session_info: false,
             show_audio_health: false,
             show_about: false,
-            show_midi_editor: false,
+            show_midi_editor: true,
             show_universe: false,
             narrow_mix: false,
             mix_views: vec!["inserts_ae".into(), "sends_ae".into(), "io".into(), "color".into()],
@@ -431,6 +435,8 @@ pub struct SoundApp {
     #[cfg(test)]
     editor_poll_fixture: Option<EditorPollFixture>,
     pub frame_ms: f32,
+    /// The control bar's CPU readout, sampled about once a second.
+    pub(crate) cpu: cpu::CpuMeter,
     last_frame: Option<f64>,
     last_meter_poll: f64,
     /// Movies for the Video window and Video track (decoded in the background).

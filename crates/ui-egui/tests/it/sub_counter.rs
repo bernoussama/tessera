@@ -17,6 +17,7 @@ impl Rig {
             app: SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default()),
             shapes: Vec::new(),
         };
+        r.app.ui.show_edit_tools = true;
         r.frames(4);
         r
     }

@@ -21,8 +21,10 @@ fn bring_to_front_keeps_an_open_midi_editor_open() {
 #[test]
 fn the_midi_editor_command_still_toggles() {
     let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
-    app.run("window.midi_editor", json!({})).unwrap();
+    // The editor starts open.
     assert!(app.ui.show_midi_editor);
     app.run("window.midi_editor", json!({})).unwrap();
     assert!(!app.ui.show_midi_editor);
+    app.run("window.midi_editor", json!({})).unwrap();
+    assert!(app.ui.show_midi_editor);
 }
