@@ -2,7 +2,7 @@ name: CI
 
 # Regression gate for every pull request and every push to main. Three jobs run in parallel,
 # each on its own 4-core runner: lint (fmt, clippy -D warnings, assets, layers), test (nextest,
-# own-main tests, doctests) and wasm (the web build check). Cargo and nextest use every core by
+# own-main tests; the workspace has no doctests) and wasm (the web build check). Cargo and nextest use every core by
 # default; each job logs the count it got.
 on:
   push:
@@ -54,6 +54,9 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          # Also keep our own crates' build output: a PR that leaves a crate alone reuses it.
+          cache-workspace-crates: true
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --keep-going -- -D warnings
       - run: cargo xtask assets
@@ -80,9 +83,11 @@ jobs:
           sudo chown -R "$USER" ~/apt-archives
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+        with:
+          # Also keep our own crates' build output: a PR that leaves a crate alone reuses it.
+          cache-workspace-crates: true
       - uses: taiki-e/install-action@nextest
       - run: cargo xtask test
-      - run: cargo test --workspace --doc
 
   wasm:
     runs-on: ubuntu-24.04
@@ -94,4 +99,7 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+        with:
+          # Also keep our own crates' build output: a PR that leaves a crate alone reuses it.
+          cache-workspace-crates: true
       - run: cargo xtask wasm
