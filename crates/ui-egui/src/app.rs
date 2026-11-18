@@ -114,6 +114,7 @@ impl SoundApp {
             #[cfg(test)]
             editor_poll_fixture: None,
             frame_ms: 0.0,
+            cpu: Default::default(),
             last_frame: None,
             last_meter_poll: f64::NEG_INFINITY,
             video: video_track::VideoPool::default(),

@@ -145,6 +145,8 @@ mod config_tests {
         let path = directory.join("ui.json");
         let _ = std::fs::remove_dir_all(&directory);
         let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
+        // Tracks starts closed, so open it before floating it.
+        app.run("ui.dock", serde_json::json!({"operation":"open","panel":"tracks"})).unwrap();
         app.run("ui.dock", serde_json::json!({"operation":"float","panel":"tracks","rect":[80,90,260,400]})).unwrap();
         app.run("ui.dock", serde_json::json!({"operation":"close","panel":"tracks"})).unwrap();
         app.ui.theme = soundcraft_ui_egui::theme::ThemeMode::Light;
@@ -184,6 +186,7 @@ mod config_tests {
         std::fs::create_dir_all(&directory).unwrap();
         let path = directory.join("ui.json");
         let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
+        app.run("ui.dock", serde_json::json!({"operation":"open","panel":"tracks"})).unwrap();
         app.run("ui.dock", serde_json::json!({"operation":"float","panel":"tracks","rect":[80,90,260,400]})).unwrap();
         app.ui.theme = soundcraft_ui_egui::theme::ThemeMode::Light;
         app.ui.narrow_mix = true;

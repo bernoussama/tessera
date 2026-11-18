@@ -225,49 +225,49 @@ pub struct Tokens {
 
 impl Tokens {
     pub const DARK: Tokens = Tokens {
-        window_bg: Color32::from_rgb(30, 30, 30),
-        panel_bg: Color32::from_rgb(37, 37, 38),
-        panel_bg2: Color32::from_rgb(44, 44, 45),
-        toolbar_bg: Color32::from_rgb(30, 30, 31),
-        toolbar_group: Color32::from_rgb(24, 24, 25),
-        border: Color32::from_rgb(14, 14, 14),
-        border_light: Color32::from_rgb(64, 64, 66),
+        window_bg: Color32::from_rgb(27, 30, 35),
+        panel_bg: Color32::from_rgb(34, 38, 44),
+        panel_bg2: Color32::from_rgb(42, 47, 54),
+        toolbar_bg: Color32::from_rgb(27, 30, 35),
+        toolbar_group: Color32::from_rgb(34, 38, 44),
+        border: Color32::from_rgb(52, 58, 66),
+        border_light: Color32::from_rgb(67, 74, 84),
         edge_light: Color32::from_rgba_premultiplied(20, 20, 20, 20),
-        text: Color32::from_rgb(214, 214, 214),
-        text_dim: Color32::from_rgb(150, 150, 152),
-        text_dark: Color32::from_rgb(16, 16, 16),
-        header_text: Color32::from_rgb(196, 196, 198),
-        counter_bg: Color32::from_rgb(4, 4, 4),
-        counter_text: Color32::from_rgb(104, 220, 120),
-        counter_label: Color32::from_rgb(200, 200, 200),
-        accent: Color32::from_rgb(64, 132, 196),
-        accent_dark: Color32::from_rgb(40, 92, 146),
-        mode_on: Color32::from_rgb(92, 196, 108),
-        mode_on_text: Color32::from_rgb(10, 30, 12),
-        mode_off_text: Color32::from_rgb(98, 196, 112),
-        button: Color32::from_rgb(58, 58, 60),
-        button_hi: Color32::from_rgb(78, 78, 80),
-        button_border: Color32::from_rgb(20, 20, 20),
+        text: Color32::from_rgb(217, 221, 227),
+        text_dim: Color32::from_rgb(139, 147, 158),
+        text_dark: Color32::from_rgb(19, 21, 26),
+        header_text: Color32::from_rgb(196, 202, 210),
+        counter_bg: Color32::from_rgb(22, 25, 30),
+        counter_text: Color32::from_rgb(217, 221, 227),
+        counter_label: Color32::from_rgb(139, 147, 158),
+        accent: Color32::from_rgb(224, 164, 88),
+        accent_dark: Color32::from_rgb(140, 106, 60),
+        mode_on: Color32::from_rgb(127, 200, 169),
+        mode_on_text: Color32::from_rgb(10, 22, 17),
+        mode_off_text: Color32::from_rgb(139, 147, 158),
+        button: Color32::from_rgb(42, 47, 54),
+        button_hi: Color32::from_rgb(52, 58, 66),
+        button_border: Color32::from_rgb(27, 30, 35),
         name_field: Color32::from_rgb(208, 208, 208),
         name_field_sel: Color32::from_rgb(232, 232, 232),
-        ruler_bg: Color32::from_rgb(40, 40, 41),
-        ruler_label_bg: Color32::from_rgb(40, 40, 41),
-        ruler_text: Color32::from_rgb(178, 178, 180),
-        ruler_tick: Color32::from_rgb(96, 96, 98),
+        ruler_bg: Color32::from_rgb(34, 38, 44),
+        ruler_label_bg: Color32::from_rgb(34, 38, 44),
+        ruler_text: Color32::from_rgb(160, 167, 177),
+        ruler_tick: Color32::from_rgb(84, 91, 101),
         tempo_ruler: Color32::from_rgb(52, 128, 88),
         meter_ruler: Color32::from_rgb(44, 108, 140),
-        marker_ruler: Color32::from_rgb(46, 46, 48),
-        playlist_bg: Color32::from_rgb(36, 36, 37),
-        playlist_alt: Color32::from_rgb(40, 40, 41),
-        grid_line: Color32::from_rgb(52, 52, 54),
-        bar_line: Color32::from_rgb(66, 66, 70),
-        selection: Color32::from_rgba_premultiplied(40, 70, 110, 110),
-        playhead: Color32::from_rgb(232, 60, 50),
-        insertion: Color32::from_rgb(230, 230, 230),
-        playback: Color32::from_rgb(140, 140, 142),
-        solo: Color32::from_rgb(222, 196, 52),
-        mute: Color32::from_rgb(232, 148, 40),
-        rec: Color32::from_rgb(214, 52, 46),
+        marker_ruler: Color32::from_rgb(42, 47, 54),
+        playlist_bg: Color32::from_rgb(34, 38, 44),
+        playlist_alt: Color32::from_rgb(38, 42, 49),
+        grid_line: Color32::from_rgb(48, 54, 62),
+        bar_line: Color32::from_rgb(62, 68, 78),
+        selection: Color32::from_rgba_premultiplied(70, 51, 28, 80),
+        playhead: Color32::from_rgb(224, 164, 88),
+        insertion: Color32::from_rgb(245, 247, 250),
+        playback: Color32::from_rgb(120, 127, 137),
+        solo: Color32::from_rgb(216, 190, 104),
+        mute: Color32::from_rgb(201, 120, 106),
+        rec: Color32::from_rgb(224, 112, 112),
         input: Color32::from_rgb(70, 170, 90),
         auto_read: Color32::from_rgb(96, 200, 110),
         auto_write: Color32::from_rgb(220, 70, 60),
@@ -277,37 +277,37 @@ impl Tokens {
         meter_yellow: Color32::from_rgb(230, 210, 60),
         meter_red: Color32::from_rgb(230, 50, 40),
         fader_track: Color32::from_rgb(12, 12, 12),
-        strip_bg: Color32::from_rgb(46, 46, 48),
-        strip_section: Color32::from_rgb(36, 36, 38),
-        slot_bg: Color32::from_rgb(28, 28, 29),
+        strip_bg: Color32::from_rgb(40, 44, 51),
+        strip_section: Color32::from_rgb(34, 38, 44),
+        slot_bg: Color32::from_rgb(30, 33, 38),
         automation_line: Color32::from_rgb(240, 240, 240),
-        menu_bar: Color32::from_rgb(22, 22, 23),
-        group_border: Color32::from_rgb(8, 8, 8),
+        menu_bar: Color32::from_rgb(27, 30, 35),
+        group_border: Color32::from_rgb(52, 58, 66),
         mode_off: Color32::from_rgb(20, 36, 22),
         mode_shuffle: Color32::from_rgb(246, 112, 102),
         mode_spot: Color32::from_rgb(236, 148, 38),
         mode_slip: Color32::from_rgb(92, 196, 108),
         mode_grid: Color32::from_rgb(86, 162, 238),
         mode_grid_relative: Color32::from_rgb(176, 134, 238),
-        counter_off: Color32::from_rgb(30, 50, 32),
-        counter_border: Color32::from_rgb(50, 50, 50),
-        counter_rule: Color32::from_rgb(40, 40, 40),
-        tool_bracket_off: Color32::from_rgb(64, 64, 66),
-        row_selected: Color32::from_rgb(52, 70, 96),
-        visible_dot: Color32::from_rgb(200, 200, 200),
+        counter_off: Color32::from_rgb(42, 47, 54),
+        counter_border: Color32::from_rgb(52, 58, 66),
+        counter_rule: Color32::from_rgb(42, 47, 54),
+        tool_bracket_off: Color32::from_rgb(67, 74, 84),
+        row_selected: Color32::from_rgb(61, 52, 39),
+        visible_dot: Color32::from_rgb(139, 147, 158),
         big_counter_bg: Color32::from_rgb(0, 0, 0),
         header_selected: Color32::from_rgb(52, 58, 66),
         strip_selected: Color32::from_rgb(54, 58, 64),
-        marker_text: Color32::from_rgb(236, 236, 236),
-        playlist_lane: Color32::from_rgb(30, 30, 31),
-        universe_bg: Color32::from_rgb(18, 18, 19),
+        marker_text: Color32::from_rgb(217, 221, 227),
+        playlist_lane: Color32::from_rgb(34, 38, 44),
+        universe_bg: Color32::from_rgb(27, 30, 35),
         universe_view: Color32::from_rgb(255, 255, 255),
         meter_bg: Color32::from_rgb(8, 8, 8),
         meter_clip_off: Color32::from_rgb(60, 20, 20),
         knob_bg: Color32::from_rgb(26, 26, 28),
         knob_ring: Color32::from_rgb(150, 150, 154),
         knob_pointer: Color32::from_rgb(230, 230, 230),
-        section_label: Color32::from_rgb(200, 200, 200),
+        section_label: Color32::from_rgb(176, 183, 192),
         slot_well: Color32::from_rgb(43, 43, 43),
         slot_empty: Color32::from_rgb(39, 39, 39),
         slot_face: [Color32::from_rgb(92, 92, 92), Color32::from_rgb(75, 75, 75)],
@@ -446,7 +446,7 @@ pub fn track_backgrounds(color: [u8; 3], selected: bool, tint: f32) -> (Color32,
     if k <= 0.0 {
         return if selected { (t.header_selected, t.playlist_alt) } else { (t.panel_bg2, t.playlist_bg) };
     }
-    let c = rgb(color);
+    let c = rgb(muted(color));
     let header = t.panel_bg2.lerp_to_gamma(c, k * 0.55);
     let header = if selected { crate::widgets::shade(header, 0.1) } else { header };
     let lane = if selected { t.playlist_alt } else { t.playlist_bg }.lerp_to_gamma(c, k * 0.2);
@@ -455,7 +455,7 @@ pub fn track_backgrounds(color: [u8; 3], selected: bool, tint: f32) -> (Color32,
 
 /// Track colours tinted for clip bodies.
 pub fn clip_colors(rgb: [u8; 3], selected: bool) -> (Color32, Color32, Color32) {
-    let [r, g, b] = rgb;
+    let [r, g, b] = muted(rgb);
     let shade = |k: f32| Color32::from_rgb((f32::from(r) * k) as u8, (f32::from(g) * k) as u8, (f32::from(b) * k) as u8);
     let tint = |k: f32| {
         let t = |c: u8| (f32::from(c) + (255.0 - f32::from(c)) * k) as u8;
@@ -472,6 +472,20 @@ pub fn clip_colors(rgb: [u8; 3], selected: bool) -> (Color32, Color32, Color32) 
 
 pub fn rgb(c: [u8; 3]) -> Color32 {
     Color32::from_rgb(c[0], c[1], c[2])
+}
+
+/// Share of the way a track colour moves toward its grey, so the palette reads quietly.
+const MUTE: f32 = 0.5;
+
+/// A track colour pulled toward its own grey by [`MUTE`]: the same hue, less saturated.
+fn muted(color: [u8; 3]) -> [u8; 3] {
+    let grey = color.iter().map(|&c| f32::from(c)).sum::<f32>() / 3.0;
+    color.map(|c| (f32::from(c) + (grey - f32::from(c)) * MUTE).round() as u8)
+}
+
+/// A track's colour as its header strip shows it: muted like the header and clip tints.
+pub fn track_rgb(color: [u8; 3]) -> Color32 {
+    rgb(muted(color))
 }
 
 pub fn bold(size: f32) -> FontId {
@@ -502,7 +516,10 @@ pub fn apply(ctx: &egui::Context, light: bool) {
     v.widgets.noninteractive.fg_stroke.color = t.text;
     v.widgets.inactive.fg_stroke.color = t.text;
     v.window_corner_radius = egui::CornerRadius::same(6);
-    v.menu_corner_radius = egui::CornerRadius::same(4);
+    v.menu_corner_radius = egui::CornerRadius::same(6);
+    for widget in [&mut v.widgets.noninteractive, &mut v.widgets.inactive, &mut v.widgets.hovered, &mut v.widgets.active, &mut v.widgets.open] {
+        widget.corner_radius = egui::CornerRadius::same(6);
+    }
     // Keep receiving native OS appearance changes even when our palette is manual. On macOS,
     // pinning egui's theme also pins the window appearance and hides later OS changes.
     ctx.set_theme(egui::ThemePreference::System);
@@ -510,8 +527,8 @@ pub fn apply(ctx: &egui::Context, light: bool) {
     // as the OS changes, including while SoundCraft's manual Light/Dark choice stays fixed.
     ctx.all_styles_mut(|s| {
         s.visuals = v.clone();
-        s.spacing.item_spacing = egui::vec2(6.0, 4.0);
-        s.spacing.button_padding = egui::vec2(6.0, 2.0);
+        s.spacing.item_spacing = egui::vec2(8.0, 5.0);
+        s.spacing.button_padding = egui::vec2(8.0, 4.0);
         s.interaction.tooltip_delay = 0.4;
     });
 }
@@ -641,7 +658,7 @@ mod tests {
                     assert_eq!(style.visuals.panel_fill, tokens.panel_bg);
                     assert_eq!(style.visuals.widgets.inactive.bg_fill, tokens.button);
                     assert_eq!(style.visuals.widgets.inactive.fg_stroke.color, tokens.text);
-                    assert_eq!(style.spacing.button_padding, egui::vec2(6.0, 2.0));
+                    assert_eq!(style.spacing.button_padding, egui::vec2(8.0, 4.0));
                 }
                 app.ui(ui);
                 assert_eq!(ui.visuals().panel_fill, tokens.panel_bg);

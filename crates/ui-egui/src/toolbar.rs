@@ -1,7 +1,7 @@
-//! The Edit window toolbar.
+//! The Edit window's control bar, and the full edit tools bar it opens into.
 
 use crate::theme::{Tokens, bold, mono, regular};
-use crate::widgets::{icon_button, key, key_fill};
+use crate::widgets::{icon_button, key, key_fill, shade};
 use crate::{SoundApp, icons};
 use egui::{Align2, Color32, CornerRadius, Painter, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::json;
@@ -9,38 +9,154 @@ use soundcraft_engine::edit::{SHUFFLE_LOCK, SNAP_TO_GRID};
 use soundcraft_model::{EditMode, EditState, Session, Tool};
 use soundcraft_time::{FeetFramesValue, GridScale, GridValue, NoteValue, TimeFormat, TimecodeValue, format_length};
 
-pub const HEIGHT: f32 = 78.0;
+/// Height of the control bar: play, stop, record, position, tempo, loop, metronome and CPU.
+pub const CONTROL_HEIGHT: f32 = 44.0;
+/// Height of the full bar, which adds the edit modes, tools, grid, counters and meters.
+pub const EDIT_TOOLS_HEIGHT: f32 = 78.0;
+
+/// The bar's height for the current setting: the control bar unless edit tools are shown.
+pub fn height(app: &SoundApp) -> f32 {
+    if app.ui.show_edit_tools { EDIT_TOOLS_HEIGHT } else { CONTROL_HEIGHT }
+}
 
 fn group(ui: &mut Ui, w: f32, h: f32, add: impl FnOnce(&mut Ui, Rect)) {
     let t = Tokens::current();
     let (r, _) = ui.allocate_exact_size(vec2(w, h), Sense::hover());
-    ui.painter().rect(r, CornerRadius::same(4), t.toolbar_group, Stroke::new(1.0, t.group_border), StrokeKind::Inside);
+    ui.painter().rect(r, CornerRadius::same(6), t.toolbar_group, Stroke::new(1.0, t.group_border), StrokeKind::Inside);
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(r.shrink(5.0)).layout(egui::Layout::left_to_right(egui::Align::Min)));
     add(&mut child, r);
 }
 
+/// Draws the control bar, or the full edit tools bar when the setting is on.
 pub fn show(app: &mut SoundApp, ui: &mut Ui) {
     let t = Tokens::current();
     let full = ui.max_rect();
     ui.painter().rect_filled(full, 0.0, t.toolbar_bg);
-    ui.add_space(4.0);
+    ui.painter().hline(full.x_range(), full.max.y - 0.5, Stroke::new(1.0, t.border));
     egui::ScrollArea::horizontal()
         .id_salt("edit_toolbar_scroll")
         .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded)
         .show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.add_space(8.0);
+            ui.horizontal_centered(|ui| {
+                ui.add_space(10.0);
                 ui.spacing_mut().item_spacing.x = 8.0;
-                edit_modes(app, ui);
-                zoom_group(app, ui);
-                tools(app, ui);
-                counters(app, ui);
-                grid_nudge(app, ui);
-                transport(app, ui);
-                tempo_meter(app, ui);
-                output_meter(app, ui);
+                if app.ui.show_edit_tools { edit_tools_bar(app, ui) } else { control_bar(app, ui) }
             });
         });
+}
+
+/// The default bar: play, stop and record, the position and tempo, loop and metronome, and CPU.
+fn control_bar(app: &mut SoundApp, ui: &mut Ui) {
+    transport_keys(app, ui);
+    position_readout(app, ui);
+    tempo_box(app, ui);
+    loop_and_click(app, ui);
+    cpu_readout(app, ui);
+    edit_tools_toggle(app, ui);
+}
+
+/// The full bar: edit modes, zoom, tools, counters, grid and nudge, transport, tempo and meter.
+fn edit_tools_bar(app: &mut SoundApp, ui: &mut Ui) {
+    edit_modes(app, ui);
+    zoom_group(app, ui);
+    tools(app, ui);
+    counters(app, ui);
+    grid_nudge(app, ui);
+    transport(app, ui);
+    tempo_meter(app, ui);
+    output_meter(app, ui);
+    edit_tools_toggle(app, ui);
+}
+
+/// Play, stop and record. Play turns green while the transport runs; record darkens while armed.
+fn transport_keys(app: &mut SoundApp, ui: &mut Ui) {
+    let t = Tokens::current();
+    let playing = app.is_playing();
+    let recording = app.engine.transport.recording;
+    let (r, resp) = ui.allocate_exact_size(vec2(34.0, 28.0), Sense::click());
+    key(ui.painter(), r, &resp, key_fill(&resp));
+    icons::draw(ui.painter(), r.shrink(7.0), "play", if playing { t.mode_on } else { t.text });
+    if resp.on_hover_text(crate::localization::text("Play (Space)")).clicked() {
+        let _ = app.run("transport.play", json!({}));
+    }
+    let (r, resp) = ui.allocate_exact_size(vec2(34.0, 28.0), Sense::click());
+    key(ui.painter(), r, &resp, key_fill(&resp));
+    icons::draw(ui.painter(), r.shrink(7.0), "stop", t.text);
+    if resp.on_hover_text(crate::localization::text("Stop (Space)")).clicked() {
+        let _ = app.run("transport.stop", json!({}));
+    }
+    let (r, resp) = ui.allocate_exact_size(vec2(34.0, 28.0), Sense::click());
+    key(ui.painter(), r, &resp, if recording { shade(t.rec, -0.55) } else { key_fill(&resp) });
+    icons::draw(ui.painter(), r.shrink(7.0), "record", t.rec);
+    // macOS gives Cmd+Space to Spotlight unless the user frees it, so name F12 first.
+    let resp = resp.on_hover_text(crate::localization::text("Record (F12 or Cmd+Space)"));
+    if let Some(why) = app.record_hint() {
+        egui::Tooltip::always_open(ui.ctx().clone(), resp.layer_id, resp.id, r).show(|ui| ui.label(why));
+    }
+    if resp.clicked() {
+        let _ = app.run("transport.record", json!({}));
+    }
+}
+
+/// The main counter in the session's main time format.
+fn position_readout(app: &SoundApp, ui: &mut Ui) {
+    let t = Tokens::current();
+    let format = app.engine.session().edit.main_counter;
+    let text = fmt_pos(app, app.position(), format);
+    let (r, _) = ui.allocate_exact_size(vec2(180.0, 28.0), Sense::hover());
+    ui.painter().rect(r, CornerRadius::same(4), t.counter_bg, Stroke::new(1.0, t.counter_border), StrokeKind::Inside);
+    ui.painter().text(pos2(r.max.x - 10.0, r.center().y), Align2::RIGHT_CENTER, text, mono(17.0), t.counter_text);
+}
+
+/// The tempo at the playhead; drag it, or click and type it.
+fn tempo_box(app: &mut SoundApp, ui: &mut Ui) {
+    let t = Tokens::current();
+    let bpm = {
+        let s = app.engine.session();
+        let tick = s.tempo.samples_to_ticks(app.position(), s.sample_rate);
+        s.tempo.tempo_at_tick(tick)
+    };
+    let (r, _) = ui.allocate_exact_size(vec2(118.0, 28.0), Sense::hover());
+    ui.painter().rect(r, CornerRadius::same(4), t.counter_bg, Stroke::new(1.0, t.counter_border), StrokeKind::Inside);
+    icons::draw(ui.painter(), Rect::from_center_size(pos2(r.min.x + 14.0, r.center().y), vec2(13.0, 13.0)), "note", t.counter_text);
+    tempo_value(app, ui, r.max.x - 8.0, r.center().y, bpm);
+}
+
+/// Loop playback and the metronome, as toggles.
+fn loop_and_click(app: &mut SoundApp, ui: &mut Ui) {
+    let (looped, click) = {
+        let e = &app.engine.session().edit;
+        (e.loop_playback, e.click)
+    };
+    if icon_button(ui, vec2(34.0, 28.0), "loop", looped, "Loop Playback (Cmd+Shift+L)").clicked() {
+        let _ = app.run("options.loop_playback", json!({}));
+    }
+    if icon_button(ui, vec2(34.0, 28.0), "click", click, "Metronome (click)").clicked() {
+        let _ = app.run("options.click", json!({}));
+    }
+}
+
+/// This process's share of the CPU, shown only where the platform can read it.
+fn cpu_readout(app: &mut SoundApp, ui: &mut Ui) {
+    let t = Tokens::current();
+    let now = ui.ctx().input(|i| i.time);
+    // The reading changes without input, so ask for a repaint once a sample is due.
+    ui.ctx().request_repaint_after(std::time::Duration::from_secs(1));
+    let Some(percent) = app.cpu.sample(now) else { return };
+    let (r, _) = ui.allocate_exact_size(vec2(96.0, 28.0), Sense::hover());
+    ui.painter().rect(r, CornerRadius::same(4), t.counter_bg, Stroke::new(1.0, t.counter_border), StrokeKind::Inside);
+    ui.painter().text(pos2(r.min.x + 10.0, r.center().y), Align2::LEFT_CENTER, crate::localization::text("CPU"), regular(10.5), t.counter_label);
+    ui.painter().text(pos2(r.max.x - 10.0, r.center().y), Align2::RIGHT_CENTER, format!("{percent:.0}%"), mono(12.0), t.counter_text);
+}
+
+/// Shows or hides the full edit tools bar.
+fn edit_tools_toggle(app: &mut SoundApp, ui: &mut Ui) {
+    let t = Tokens::current();
+    let on = app.ui.show_edit_tools;
+    let tip = crate::localization::text("Show the edit tools: modes, tools, grid and counters");
+    if crate::widgets::text_toggle(ui, vec2(56.0, 28.0), crate::localization::text("Tools"), on, t.accent, tip).clicked() {
+        let _ = app.run("window.edit_tools", json!({"value": !on}));
+    }
 }
 
 struct ModeCellState {
@@ -593,18 +709,18 @@ fn transport(app: &mut SoundApp, ui: &mut Ui) {
                 }
                 let (r, resp) = ui.allocate_exact_size(vec2(38.0, 28.0), Sense::click());
                 key(ui.painter(), r, &resp, key_fill(&resp));
-                icons::draw(ui.painter(), r.shrink(5.0), "stop", if playing { t.text } else { t.accent });
+                icons::draw(ui.painter(), r.shrink(5.0), "stop", if playing { t.text } else { t.text_dim });
                 if resp.on_hover_text(crate::localization::text("Stop (Space)")).clicked() {
                     let _ = app.run("transport.stop", json!({}));
                 }
                 let (r, resp) = ui.allocate_exact_size(vec2(38.0, 28.0), Sense::click());
-                key(ui.painter(), r, &resp, if playing { Color32::from_rgb(40, 90, 50) } else { key_fill(&resp) });
-                icons::draw(ui.painter(), r.shrink(5.0), "play", if playing { Color32::from_rgb(120, 255, 140) } else { t.counter_text });
+                key(ui.painter(), r, &resp, if playing { shade(t.mode_on, -0.6) } else { key_fill(&resp) });
+                icons::draw(ui.painter(), r.shrink(5.0), "play", if playing { t.mode_on } else { t.counter_text });
                 if resp.on_hover_text(crate::localization::text("Play (Space)")).clicked() {
                     let _ = app.run("transport.play", json!({}));
                 }
                 let (r, resp) = ui.allocate_exact_size(vec2(38.0, 28.0), Sense::click());
-                key(ui.painter(), r, &resp, if recording { Color32::from_rgb(110, 30, 30) } else { key_fill(&resp) });
+                key(ui.painter(), r, &resp, if recording { shade(t.rec, -0.55) } else { key_fill(&resp) });
                 icons::draw(ui.painter(), r.shrink(5.0), "record", t.rec);
                 // macOS gives Cmd+Space to Spotlight unless the user frees it, so name F12 first.
                 let resp = resp.on_hover_text(crate::localization::text("Record (F12 or Cmd+Space)"));

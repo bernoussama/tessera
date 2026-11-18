@@ -2,6 +2,11 @@
 pub(super) fn translate(source: &str) -> Option<&'static str> {
     Some(match source {
         "+ Marker" => "+ Marcador",
+        "CPU" => "CPU",
+        "Edit Tools" => "Ferramentas de edição",
+        "Metronome (click)" => "Metrônomo (clique)",
+        "Show the edit tools: modes, tools, grid and counters" => "Mostrar as ferramentas de edição: modos, ferramentas, grade e contadores",
+        "Tools" => "Ferramentas",
         "+ Selection" => "+ Seleção",
         "+" => "+",
         "/" => "/",

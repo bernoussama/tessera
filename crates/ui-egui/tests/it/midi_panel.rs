@@ -33,7 +33,7 @@ fn check_resize(with_clip: bool) {
         frame(&ctx, &mut app, vec![]);
     }
     let initial = panel(&ctx);
-    assert!((initial.height() - 320.0).abs() < 1.0, "initial panel: {initial:?}");
+    assert!((initial.height() - 260.0).abs() < 1.0, "initial panel: {initial:?}");
     let notes = app.engine.session().clone();
 
     // Drag the shared boundary up and down, then allow several idle frames
@@ -117,11 +117,11 @@ fn check_held_replacement(operation: &str) {
     let first = start - vec2(0.0, 80.0);
     frame(&ctx, &mut app, vec![Event::PointerMoved(first)]);
     frame(&ctx, &mut app, vec![]);
-    assert!((panel(&ctx).height() - 400.0).abs() < 1.0, "first drag must resize");
+    assert!((panel(&ctx).height() - 340.0).abs() < 1.0, "first drag must resize");
     let second = start - vec2(0.0, 120.0);
     frame(&ctx, &mut app, vec![Event::PointerMoved(second)]);
     frame(&ctx, &mut app, vec![]);
-    assert!((panel(&ctx).height() - 440.0).abs() < 1.0, "a normal second held move must continue resizing");
+    assert!((panel(&ctx).height() - 380.0).abs() < 1.0, "a normal second held move must continue resizing");
     match operation {
         "reset" => {
             app.run("ui.dock.reset", json!({})).unwrap();
@@ -142,7 +142,7 @@ fn check_held_replacement(operation: &str) {
     frame(&ctx, &mut app, vec![Event::PointerMoved(after_reset)]);
     frame(&ctx, &mut app, vec![]);
     assert_eq!(serde_json::to_value(&app.ui.docking).unwrap(), reset, "old held divider must not resize the replacement layout");
-    let expected = if operation == "reset" { 320.0 } else { 440.0 };
+    let expected = if operation == "reset" { 260.0 } else { 380.0 };
     assert!((panel(&ctx).height() - expected).abs() < 1.0);
     frame(&ctx, &mut app, vec![button(after_reset, false)]);
     for _ in 0..4 {

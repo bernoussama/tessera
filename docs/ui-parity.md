@@ -1,6 +1,6 @@
 # UI parity
 
-> **Last reviewed:** 2026-10-25 · **Last updated:** 2026-10-27 · **Change:** minor (Cancel Zoom Toggle; Tracks and Groups and Clips in dock columns; Alt-click returns a plugin parameter to its default) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-10-25 · **Last updated:** 2026-11-18 · **Change:** minor (thin Edit control bar; MIDI editor docked at the bottom; Tracks and Clips closed by default; dark palette) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 How SoundCraft feels in the hands of a Pro Tools user: tools, modes, modifiers, shortcuts,
 windows, meters. Measured from `crates/model/src/session.rs` (tools, modes), the command
@@ -70,6 +70,7 @@ Legend: ✅ matches · 🟡 partial · ❌ missing.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Edit window: a thin control bar (play, stop, record, position, tempo, loop, metronome, CPU) with the edit modes, tools, grid, counters and meters behind a Tools toggle; MIDI editor docked along the bottom, Tracks and Clips closed by default; dark palette with an amber accent and muted track colours. Readiness estimate unchanged |
 | 2026-10-27 | minor | Clip Effects gain supports Alt/Option-click reset to 0 dB and Ctrl/Cmd fine adjustment. Readiness estimate unchanged |
 | 2026-10-25 | minor | Zoom Toggle row: Alt+Shift+E and Alt-click cancel Zoom Toggle and keep the view. Readiness estimate unchanged |
 | 2026-10-25 | minor | Edit and Mix windows: Tracks and Groups and Clips in full-height dock columns. Readiness estimate unchanged |

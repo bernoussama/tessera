@@ -103,6 +103,8 @@ fn kick_eq() -> (Harness<'static, SoundApp>, TrackId) {
     app.run("mix.insert_param", json!({"track": kick.0, "slot": 0, "param": "input_gain", "value": 6.0})).unwrap();
     app.run("mix.insert_param", json!({"track": kick.0, "slot": 0, "param": "hpf_slope", "value": slope.max})).unwrap();
     app.engine.end_merge();
+    // The docked MIDI editor would cover the lower part of the window.
+    app.ui.show_midi_editor = false;
     app.ui.plugin_windows = vec![(kick, 0)];
     (harness(app), kick)
 }
@@ -138,7 +140,11 @@ fn alt_click_returns_a_plugin_window_choice_to_its_default_without_opening_the_l
     let slope = param("eq_7band", "hpf_slope");
     assert_ne!(slope.default, slope.max);
     let row = h.get_by_label("HPF Slope").rect();
-    let combo = h.query_all_by_role(Role::ComboBox).map(|n| n.rect()).find(|r| (r.center().y - row.center().y).abs() < 4.0).unwrap();
+    let combo = h
+        .query_all_by_role(Role::ComboBox)
+        .map(|n| n.rect())
+        .find(|r| (r.center().y - row.center().y).abs() < 4.0 && r.min.x >= row.min.x - 4.0)
+        .unwrap();
     let steps = undo_steps(&h);
     alt_press(&mut h, combo.center(), 0.0);
     assert_eq!(insert_param(&h, kick, 0, slope), slope.default, "Alt-click did not return HPF Slope to its default");

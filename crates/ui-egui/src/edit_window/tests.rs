@@ -2013,13 +2013,17 @@ fn an_overlapping_clip_covers_the_pill_of_the_clip_below() {
     );
 }
 
+/// Dark markers use the single accent; the light palette's accent is blue, so its markers stay blue.
+/// Both turn red while a track is armed.
 #[test]
-fn selection_markers_are_blue_or_red_when_a_track_is_armed() {
+fn selection_markers_are_the_accent_or_red_when_a_track_is_armed() {
     for t in [Tokens::DARK, Tokens::LIGHT] {
-        let (blue, red) = (selection_marker_colour(&t, false), selection_marker_colour(&t, true));
-        assert!(blue.b() > blue.r() && blue.b() > blue.g(), "{blue:?} is not blue");
-        assert!(red.r() > red.g() && red.r() > red.b(), "{red:?} is not red");
+        assert_eq!(selection_marker_colour(&t, false), t.accent);
+        assert_eq!(selection_marker_colour(&t, true), t.rec);
     }
+    let (blue, red) = (selection_marker_colour(&Tokens::LIGHT, false), selection_marker_colour(&Tokens::LIGHT, true));
+    assert!(blue.b() > blue.r() && blue.b() > blue.g(), "{blue:?} is not blue");
+    assert!(red.r() > red.g() && red.r() > red.b(), "{red:?} is not red");
 }
 
 type Piece = (Color32, Vec<egui::Pos2>);

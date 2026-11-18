@@ -8,6 +8,7 @@ use soundcraft_ui_egui::{Services, SoundApp};
 fn e_fits_the_selection_to_the_edit_window_and_the_button_goes_back() {
     for os in [OperatingSystem::Mac, OperatingSystem::Windows, OperatingSystem::Nix] {
         let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+        app.ui.show_edit_tools = true;
         let bass = app.engine.session().track_by_name("Bass").unwrap().id.0;
         app.engine.execute("edit.select", &json!({"tracks": [bass], "start": 96_000, "end": 192_000})).unwrap();
         let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).with_os(os).build_ui_state(
@@ -47,6 +48,7 @@ fn alt_shift_e_and_an_alt_click_cancel_zoom_toggle_and_keep_the_zoomed_view() {
     for os in [OperatingSystem::Mac, OperatingSystem::Windows, OperatingSystem::Nix] {
         for alt_click in [false, true] {
             let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+            app.ui.show_edit_tools = true;
             let bass = app.engine.session().track_by_name("Bass").unwrap().id.0;
             app.engine.execute("edit.select", &json!({"tracks": [bass], "start": 96_000, "end": 192_000})).unwrap();
             let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).with_os(os).build_ui_state(
