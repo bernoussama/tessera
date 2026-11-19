@@ -40,7 +40,9 @@ fn track_header_selectors_have_accessible_names() {
 /// value; a screen reader otherwise sees several identical "Solo" or "Track view" controls.
 #[test]
 fn repeated_track_controls_are_named_and_valued_per_track() {
-    let mut h = harness_with(soundcraft_engine::demo::demo_engine());
+    let mut engine = soundcraft_engine::demo::demo_engine();
+    engine.session_mut().edit.set_flag("edit_view.detailed_headers", true);
+    let mut h = harness_with(engine);
     for name in ["Kick", "Snare"] {
         let view_label = format!("Track view for {name}");
         let view = h.query_by_role_and_label(Role::ComboBox, &view_label).unwrap_or_else(|| panic!("missing track view for {name}"));
@@ -2379,5 +2381,5 @@ fn short_track_name_is_centered_and_long_name_is_left_aligned() {
 
     assert_eq!(long_pos.x, r1.min.x + 17.5);
     let first_center_x = first_pos.x + first_size.x * 0.5;
-    assert!((first_center_x - (r0.min.x + 64.5)).abs() <= 0.1, "short name should be centered (center was at {first_center_x})");
+    assert!((first_center_x - (r0.min.x + 58.0)).abs() <= 0.1, "short name should be centered (center was at {first_center_x})");
 }

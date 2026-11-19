@@ -1,6 +1,19 @@
 use super::{Rect, Samples, Session, Track, pos2};
 
+/// Width of the detailed track header; the default simple header is narrower (see [`header_base`]).
 pub const HEADER_W: f32 = 136.0;
+
+const SIMPLE_HEADER_W: f32 = 112.0;
+
+/// Whether track headers show every control (View > Edit Window Views > Detailed Track Headers).
+pub fn detailed_headers(s: &Session) -> bool {
+    s.edit.flag("edit_view.detailed_headers")
+}
+
+/// The track header's own width, before any optional columns.
+pub fn header_base(detailed: bool) -> f32 {
+    if detailed { HEADER_W } else { SIMPLE_HEADER_W }
+}
 
 pub const COLUMN_W: f32 = 112.0;
 
@@ -32,8 +45,8 @@ pub fn edit_columns(s: &Session) -> Vec<Column> {
     COLUMNS.into_iter().filter(|c| all || s.edit.flag(&format!("edit_view.{}", c.0))).collect()
 }
 
-pub fn header_width(cols: &[Column]) -> f32 {
-    HEADER_W + cols.iter().map(|c| c.3).sum::<f32>()
+pub fn header_width(s: &Session, cols: &[Column]) -> f32 {
+    header_base(detailed_headers(s)) + cols.iter().map(|c| c.3).sum::<f32>()
 }
 
 pub const RULER_H: f32 = 17.0;

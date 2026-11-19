@@ -179,7 +179,9 @@ fn enter_up() -> Event {
 
 #[test]
 fn the_enter_that_replaces_an_open_dialog_does_not_press_the_new_default_button() {
-    let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    let mut engine = soundcraft_engine::demo::demo_engine();
+    engine.session_mut().edit.rulers = ["bars_beats", "min_secs", "tempo", "meter", "markers"].map(String::from).to_vec();
+    let mut app = SoundApp::new(engine, None, Services::default());
     let ctx = egui::Context::default();
     menus::invoke_menu(&mut app, "setup.session", "Setup > Session");
     run_frame(&ctx, &mut app, vec![]);
@@ -247,7 +249,9 @@ fn clear_auto_rename_modify_group_and_save_changes_replacing_a_dialog_ignore_the
 
 #[test]
 fn a_tempo_change_dialog_that_replaces_an_open_dialog_ignores_the_enter_of_its_first_frame() {
-    let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    let mut engine = soundcraft_engine::demo::demo_engine();
+    engine.session_mut().edit.rulers = ["bars_beats", "tempo"].map(String::from).to_vec();
+    let mut app = SoundApp::new(engine, None, Services::default());
     let ctx = egui::Context::default();
     menus::invoke_menu(&mut app, "setup.session", "Setup > Session");
     run_frame(&ctx, &mut app, vec![]);

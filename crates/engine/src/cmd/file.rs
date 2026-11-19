@@ -17,7 +17,7 @@ pub fn specs() -> Vec<CommandSpec> {
             let missing = crate::io::open_session(e, &path)?;
             Ok(json!({"name": e.session().name, "tracks": e.session().tracks.len(), "missing": missing}))
         }),
-        cmd!(noundo "session.close", "Close Session", ["File"], Some("Cmd+Shift+W"), "{}", always, |e, _| { e.replace_session(Session::default()); e.path = None; Ok(json!({})) }),
+        cmd!(noundo "session.close", "Close Session", ["File"], Some("Cmd+Shift+W"), "{}", always, |e, _| { let mut s = Session::default(); crate::calm_view(&mut s); e.replace_session(s); e.path = None; Ok(json!({})) }),
         cmd!(noundo "session.save", "Save Session", ["File"], Some("Cmd+S"), "{path?, replace?: false}", always, |e, p| {
             let path = str_param(p, "path").map(str::to_string).or_else(|| e.path.clone()).ok_or_else(|| bad("session.save", "no path yet: pass `path` (Save As)"))?;
             refuse_replacing(e, "session.save", &crate::io::session_file(&path), p)?;
@@ -221,6 +221,7 @@ fn new_session(e: &mut Engine, p: &Value) -> Result<Value> {
         SampleRate::new(i64_or(p, "sample_rate", 48_000).clamp(0, i64::from(u32::MAX)) as u32).map_err(|err| bad("session.new", err.to_string()))?;
     let mut s = if str_param(p, "template") == Some("demo") { crate::demo::demo_session() } else { Session::new(name.clone(), sr) };
     s.name = name;
+    crate::calm_view(&mut s);
     if let Some(b) = p.get("bit_depth") {
         s.bit_depth = match b.to_string().trim_matches('"') {
             "16" => soundcraft_model::BitDepthSetting::Int16,

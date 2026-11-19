@@ -206,6 +206,7 @@ fn lead_sequence() -> Sequence {
 pub fn demo_session() -> Session {
     let sr = SampleRate::HZ_48000;
     let mut s = Session::new("Midnight Groove", sr);
+    crate::calm_view(&mut s);
     let _ = s.tempo.set_tempo(0, BPM);
     let srf = sr.as_f64();
     let bar = beat_len(srf) * 4;

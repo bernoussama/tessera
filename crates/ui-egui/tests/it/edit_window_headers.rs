@@ -48,7 +48,10 @@ fn bypassed(h: &Harness<'_, SoundApp>, slot: usize) -> bool {
 }
 
 fn harness(track: &str, height: &str, view: &str) -> (Harness<'static, SoundApp>, TrackId, [f32; 4]) {
-    let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    let mut engine = soundcraft_engine::demo::demo_engine();
+    engine.session_mut().edit.set_flag("edit_view.detailed_headers", true);
+    engine.session_mut().edit.rulers = ["bars_beats", "min_secs", "tempo", "meter", "markers"].map(String::from).to_vec();
+    let mut app = SoundApp::new(engine, None, Services::default());
     app.run(view, json!({})).unwrap();
     super::docking_workflows::close_browser(&mut app.ui);
     app.ui.show_devices = false;

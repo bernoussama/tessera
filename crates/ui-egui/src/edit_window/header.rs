@@ -1,4 +1,4 @@
-use super::layout::STRIP_W;
+use super::layout::{STRIP_W, detailed_headers, header_base};
 use super::tracks::{click_track, folder_depth, height_targets, in_edit_window, track_context_menu, view_label, view_menu};
 use super::{
     Align2, AutoParam, Color32, Gesture, Pos2, Rect, Sense, Shape, SoundApp, Stroke, StrokeKind, Tokens, Track, TrackHeight, TrackId, TrackKind, Ui,
@@ -17,13 +17,19 @@ pub(super) fn track_header(app: &mut SoundApp, ui: &mut Ui, track: &Track, head:
     bg.context_menu(|ui| track_context_menu(app, ui, id));
     color_strip(app, ui, id, head);
     resize_edge(app, ui, track, head);
-    strip_buttons(app, ui, track, head);
-    name_plate(app, ui, track, head, selected);
-    playlist_menu(app, ui, track, head, head_bg);
-    toggle_keys(app, ui, track, head);
-    view_selector(app, ui, track, head);
-    voice_row(app, ui, track, head);
-    field_row(app, ui, track, head, head_bg);
+    let detailed = detailed_headers(app.engine.session());
+    strip_buttons(app, ui, track, head, detailed);
+    name_plate(app, ui, track, head, selected, detailed);
+    if detailed {
+        playlist_menu(app, ui, track, head, head_bg);
+        toggle_keys(app, ui, track, head, true);
+        view_selector(app, ui, track, head);
+        voice_row(app, ui, track, head);
+        field_row(app, ui, track, head, head_bg);
+    } else {
+        instrument_line(ui, track, head);
+        toggle_keys(app, ui, track, head, false);
+    }
     let md = app.meters.get(&id).copied().unwrap_or_default();
     header_meter(ui, Rect::from_min_max(pos2(head.max.x - 8.0, head.min.y + 1.0), pos2(head.max.x, head.max.y - 1.5)), &md, track.channels() >= 2);
 }
@@ -82,8 +88,12 @@ fn resize_edge(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect) {
     }
 }
 
-/// The strip's round options/folder button and the automation-lane toggle.
-fn strip_buttons(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect) {
+/// The strip's round options/folder button and the automation-lane toggle. The simple header keeps
+/// only the folder toggle (track options stay in the right-click menu).
+fn strip_buttons(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect, detailed: bool) {
+    if !detailed && !track.is_folder() {
+        return;
+    }
     let id = track.id;
     let h = head.height();
     let at = |x: f32, y: f32, w: f32, h: f32| Rect::from_min_size(pos2(head.min.x + x, head.min.y + y), vec2(w, h));
@@ -100,7 +110,7 @@ fn strip_buttons(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect) {
     } else {
         egui::Popup::menu(&rresp.on_hover_text(crate::localization::text("Track options"))).show(|ui| track_context_menu(app, ui, id));
     }
-    if h >= 40.0 && track.kind.has_playlist() {
+    if detailed && h >= 40.0 && track.kind.has_playlist() {
         let ar = at(3.0, h - 12.0, 9.0, 9.0);
         let aresp = ui.interact(ar, ui.scope_id().with(("auto_lane", id.0)), Sense::click());
         let showing = AutoParam::parse(&track.view).is_some();
@@ -123,12 +133,13 @@ fn strip_buttons(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect) {
 }
 
 /// The track name, highlighted when selected, with click, rename and drag-to-reorder.
-fn name_plate(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect, selected: bool) {
+fn name_plate(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect, selected: bool, detailed: bool) {
     let t = Tokens::current();
     let id = track.id;
     let at = |x: f32, y: f32, w: f32, h: f32| Rect::from_min_size(pos2(head.min.x + x, head.min.y + y), vec2(w, h));
     let indent = folder_depth(app.engine.session(), track) as f32 * 10.0;
-    let name_r = at(16.0 + indent, 1.5, 97.0 - indent, 15.0);
+    let name_w = if detailed { 97.0 } else { header_base(false) - 16.0 - 12.0 };
+    let name_r = at(16.0 + indent, 1.5, name_w - indent, 15.0);
     if selected {
         ui.painter().rect_filled(name_r, 2.0, t.name_field_sel);
     }
@@ -218,8 +229,9 @@ fn playlist_menu(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect, hea
     });
 }
 
-/// Record, input, solo and mute keys.
-fn toggle_keys(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect) {
+/// Record, input, solo and mute keys. The simple header shows mute, solo and record-arm only, lower
+/// when the instrument line sits above them.
+fn toggle_keys(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect, detailed: bool) {
     let id = track.id;
     let h = head.height();
     let at = |x: f32, y: f32, w: f32, h: f32| Rect::from_min_size(pos2(head.min.x + x, head.min.y + y), vec2(w, h));
@@ -228,18 +240,42 @@ fn toggle_keys(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect) {
     if h >= 37.0 && !is_master {
         let (records, mixes) = (track.kind.has_playlist(), true);
         let implied = soundcraft_mix::solo_mutes(app.engine.session(), track);
-        let keys = [
-            (HeaderKey::Rec, m.record_arm, false, "mix.record_arm", records),
-            (HeaderKey::Input, m.input_monitor, false, "mix.input_monitor", records),
-            (HeaderKey::Solo, m.solo, false, "mix.solo", mixes),
-            (HeaderKey::Mute, m.mute, implied, "mix.mute", mixes),
-        ];
+        let rec = (HeaderKey::Rec, m.record_arm, false, "mix.record_arm", records);
+        let input = (HeaderKey::Input, m.input_monitor, false, "mix.input_monitor", records);
+        let solo = (HeaderKey::Solo, m.solo, false, "mix.solo", mixes);
+        let mute = (HeaderKey::Mute, m.mute, implied, "mix.mute", mixes);
+        let (keys, x0, step, y) = if detailed {
+            (vec![rec, input, solo, mute], 23.0, 26.0, 20.0)
+        } else {
+            (vec![mute, solo, rec], 20.0, 22.0, if h >= SIMPLE_INSTRUMENT_MIN_H { 31.0 } else { 20.0 })
+        };
         for (i, (key, lit, implied, cmd, shown)) in keys.into_iter().enumerate() {
-            if shown && header_toggle(ui, at(23.0 + i as f32 * 26.0, 20.0, 16.0, 16.0), id, &track.name, key, lit, implied).clicked() {
+            if shown && header_toggle(ui, at(x0 + i as f32 * step, y, 16.0, 16.0), id, &track.name, key, lit, implied).clicked() {
                 let _ = app.run(cmd, json!({"track": id.0}));
             }
         }
     }
+}
+
+/// Tracks at least this tall show the instrument name in the simple header.
+const SIMPLE_INSTRUMENT_MIN_H: f32 = 56.0;
+
+/// The instrument's short name in dim text under the track name (simple headers, instrument tracks).
+fn instrument_line(ui: &mut Ui, track: &Track, head: Rect) {
+    if track.kind != TrackKind::Instrument || head.height() < SIMPLE_INSTRUMENT_MIN_H {
+        return;
+    }
+    let t = Tokens::current();
+    let r = Rect::from_min_size(head.min + vec2(18.0, 17.0), vec2(header_base(false) - 18.0 - 12.0, 12.0));
+    ui.painter().with_clip_rect(r).text(r.left_center(), Align2::LEFT_CENTER, instrument_name(track), regular(10.0), t.text_dim);
+}
+
+fn instrument_name(track: &Track) -> &'static str {
+    track
+        .instrument
+        .as_ref()
+        .and_then(|i| crate::mix_window::plugin_info(&i.plugin))
+        .map_or_else(|| crate::localization::text("no instrument"), |p| p.short_name)
 }
 
 /// The track view selector.
@@ -402,11 +438,7 @@ fn field_row(app: &mut SoundApp, ui: &mut Ui, track: &Track, head: Rect, head_bg
             let resp = ui.interact(field, ui.scope_id().with(("field", id.0)), Sense::click());
             ui.painter().rect_filled(field, 2.0, shade(head_bg, if resp.hovered() { -0.02 } else { -0.1 }));
             if track.kind == TrackKind::Instrument {
-                let name = track
-                    .instrument
-                    .as_ref()
-                    .and_then(|i| crate::mix_window::plugin_info(&i.plugin))
-                    .map_or_else(|| crate::localization::text("no instrument"), |p| p.short_name);
+                let name = instrument_name(track);
                 ui.painter().with_clip_rect(field).text(pos2(field.min.x + 5.0, field.center().y), Align2::LEFT_CENTER, name, bold(10.0), t.text);
                 egui::Popup::menu(&resp.on_hover_text(crate::localization::text("Instrument")))
                     .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)

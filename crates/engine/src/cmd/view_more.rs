@@ -90,6 +90,7 @@ pub fn specs() -> Vec<CommandSpec> {
         flag!("view.edit_track_color", "Track Color", ["View", "Edit Window Views"], "edit_view.track_color"),
         flag!("view.edit_marker_controls", "Marker Controls", ["View", "Edit Window Views"], "edit_view.marker_controls"),
         flag!("view.edit_pinned_tracks", "Pinned Tracks", ["View", "Edit Window Views"], "edit_view.pinned_tracks"),
+        flag!("view.edit_detailed_headers", "Detailed Track Headers", ["View", "Edit Window Views"], "edit_view.detailed_headers"),
         cmd!(noundo "view.edit_all", "All", ["View", "Edit Window Views"], None, "{} — shows every Edit window column", always, |e, _| Ok(set_flags(e, &EDIT_VIEWS, true))),
         cmd!(noundo "view.edit_minimal", "Minimal", ["View", "Edit Window Views"], None, "{} — hides every optional Edit window column", always, |e, _| Ok(set_flags(e, &EDIT_VIEWS, false))),
         // Rulers.

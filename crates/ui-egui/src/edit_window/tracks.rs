@@ -2,7 +2,7 @@ use super::automation::draw_automation;
 use super::clips::{ClipLane, GridLines, clip_cuts, draw_clip, draw_live_take, draw_strip_silence};
 use super::header::{header_column, track_header};
 use super::input::lane_interaction;
-use super::layout::{Column, HEADER_W, LANE_H, STRIP_W, lane_rect, sample_at, x_of};
+use super::layout::{Column, LANE_H, STRIP_W, detailed_headers, header_base, lane_rect, sample_at, x_of};
 use super::{
     Align2, AutoParam, Range, Rect, Sense, Session, SoundApp, Stroke, Tokens, Track, TrackHeight, TrackId, TrackKind, Ui, json, ops, pos2, regular,
     rgb, vec2,
@@ -64,7 +64,7 @@ pub(super) fn track_row(app: &mut SoundApp, ui: &mut Ui, id: TrackId, row: Rect,
     let s = app.engine.session_arc();
     let Some(track) = s.track(id) else { return };
     let selected = s.edit.selected_tracks.contains(&id);
-    let head = Rect::from_min_max(row.min, pos2(row.min.x + HEADER_W, row.max.y));
+    let head = Rect::from_min_max(row.min, pos2(row.min.x + header_base(detailed_headers(&s)), row.max.y));
     let (head_bg, lane_bg) = crate::theme::track_backgrounds(track.color, selected, app.ui.track_tint);
     let mut x = head.max.x;
     for &(col, _, _, w) in cols {
