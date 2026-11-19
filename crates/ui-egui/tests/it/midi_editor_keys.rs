@@ -8,6 +8,7 @@ use soundcraft_ui_egui::{Services, SoundApp};
 fn harness(rename: bool) -> Harness<'static, SoundApp> {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     app.run("edit.select", json!({"tracks": ["Keys"]})).unwrap();
     let keys = app.engine.session().track_by_name("Keys").unwrap().id;
     if rename {

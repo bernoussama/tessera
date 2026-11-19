@@ -32,6 +32,8 @@ fn keys_with_effect() -> (soundcraft_engine::Engine, TrackId) {
 /// The Edit window with the Devices tab in front and `Keys` selected.
 fn harness(engine: soundcraft_engine::Engine) -> Harness<'static, SoundApp> {
     let mut app = SoundApp::new(engine, None, Services::default());
+    // The Browser lists the same plug-ins by name; this panel's menus are the subject.
+    super::docking_workflows::close_browser(&mut app.ui);
     app.ui.window = MainWindow::Edit;
     app.run("edit.select", json!({"tracks": ["Keys"]})).unwrap();
     app.run("ui.dock", json!({"operation": "activate", "panel": "devices"})).unwrap();

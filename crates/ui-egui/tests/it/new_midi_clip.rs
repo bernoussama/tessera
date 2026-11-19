@@ -127,6 +127,7 @@ fn the_pencil_makes_no_clips_on_audio_tracks() {
 fn a_click_in_the_empty_midi_editor_adds_a_clip_at_the_insertion_point() {
     let mut r = Rig::new("instrument");
     r.app.ui.show_midi_editor = true;
+    r.app.ui.show_devices = false;
     let track = r.app.engine.session().tracks[0].id.0;
     r.app.run("edit.select", json!({"tracks": [track], "start": (r.bar(3) + r.bar(4)) / 2})).unwrap();
     r.frames(4);
@@ -141,6 +142,7 @@ fn a_click_in_the_empty_midi_editor_adds_a_clip_at_the_insertion_point() {
 fn a_pencil_click_on_a_clip_selects_it_for_the_midi_editor() {
     let mut r = Rig::new("instrument");
     r.app.ui.show_midi_editor = true;
+    r.app.ui.show_devices = false;
     r.drag((r.bar(2) + r.bar(3)) / 2, (r.bar(3) + r.bar(4)) / 2);
     r.drag((r.bar(6) + r.bar(7)) / 2, (r.bar(7) + r.bar(8)) / 2);
     let ids: Vec<_> = r.app.engine.session().tracks[0].clips().iter().map(|c| c.id).collect();

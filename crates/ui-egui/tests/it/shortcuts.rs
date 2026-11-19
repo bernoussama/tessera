@@ -168,6 +168,7 @@ fn left_and_right_arrows_centre_the_edit_window_on_the_selected_clip() {
 fn the_piano_roll_keeps_the_plain_arrows() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     app.run("edit.select", json!({"tracks": ["Keys"], "start": 0, "end": 480_000})).unwrap();
     app.run("view.zoom_set", json!({"samples_per_px": 10.0})).unwrap();
     app.run("view.scroll", json!({"to": 1_000_000})).unwrap();
@@ -197,6 +198,7 @@ fn the_piano_roll_keeps_the_plain_arrows() {
 fn a_midi_editor_behind_another_tab_leaves_the_arrows_to_the_edit_window() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     let (clip_id, clip) = app.engine.session().tracks.iter().flat_map(|t| t.clips()).find(|c| c.start > 100_000).map(|c| (c.id, c.range())).unwrap();
     app.run("view.zoom_set", json!({"samples_per_px": 10.0})).unwrap();
     app.run("view.scroll", json!({"to": 0})).unwrap();

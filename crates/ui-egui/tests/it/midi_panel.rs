@@ -24,6 +24,7 @@ fn button(pos: Pos2, pressed: bool) -> Event {
 fn check_resize(with_clip: bool) {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     if with_clip {
         app.run("edit.select", json!({"tracks": ["Keys"]})).unwrap();
     }
@@ -103,6 +104,7 @@ fn legacy_visibility_sync_cancels_a_held_midi_divider_without_editing_the_sessio
 fn check_held_replacement(operation: &str) {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     app.run("edit.select", json!({"tracks":["Keys"]})).unwrap();
     app.ui.show_memory_locations = operation == "arrange";
     let session = app.engine.session().clone();
@@ -187,6 +189,7 @@ fn frame_at(ctx: &egui::Context, app: &mut SoundApp, time: f64, events: Vec<Even
 fn open_empty_clip() -> (SoundApp, egui::Context, u64, Pos2) {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     let created = app.run("midi.new_clip", json!({"track": "Keys", "start": 0, "length": 96000})).unwrap();
     let clip = created["clip"].as_u64().unwrap();
     app.run("edit.select", json!({"clips": [clip]})).unwrap();

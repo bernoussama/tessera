@@ -40,12 +40,8 @@ fn default_layouts_show_the_canvas_with_the_midi_editor_below_and_no_side_lists(
     let edit = docking::edit_default();
     let bottom = Node::Tabs { panels: vec![Panel::Midi, Panel::Devices], active: 1 };
     let canvas_and_bottom = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + 26.0), tabs(Panel::Canvas), bottom);
-    let expected = split(
-        SplitAxis::Horizontal,
-        SplitSize::FixedFirst(BROWSER_WIDTH),
-        dock(Side::Start, Panel::Browser, BROWSER_WIDTH),
-        canvas_and_bottom,
-    );
+    let expected =
+        split(SplitAxis::Horizontal, SplitSize::FixedFirst(BROWSER_WIDTH), dock(Side::Start, Panel::Browser, BROWSER_WIDTH), canvas_and_bottom);
     assert_eq!(edit.layout.root, Some(expected));
     assert_eq!((TRACKS_WIDTH, CLIPS_WIDTH, MIDI_HEIGHT), (168.0, 230.0, 260.0));
     let mix = docking::mix_default();
@@ -67,6 +63,10 @@ fn default_layouts_show_the_canvas_with_the_midi_editor_below_and_no_side_lists(
     let state = &h.state().ui;
     assert!(state.show_midi_editor && !state.show_tracks_list && !state.show_clip_list);
     assert!(h.query_by_role_and_label(Role::Tab, "Tracks and Groups").is_none() && h.query_by_role_and_label(Role::Tab, "Clips").is_none());
+    // The bottom tabs are Notes and Devices, with Devices in front.
+    assert_eq!(state.docking.layout.panel_state(&Panel::Devices), craft_ui::docking::PanelState::Front);
+    h.state_mut().run("ui.dock", json!({"operation":"activate","panel":"midi"})).unwrap();
+    h.run_steps(3);
     let midi = h.ctx.data(|data| data.get_temp::<Rect>(egui::Id::unique("soundcraft-midi-body"))).unwrap();
     assert!((midi.height() - MIDI_HEIGHT).abs() < 1.0 && midi.left() < 20.0 && midi.right() > 1380.0, "midi {midi:?}");
 }
