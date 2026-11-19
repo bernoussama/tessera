@@ -200,6 +200,7 @@ fn window_keys_open_their_windows() {
 fn the_piano_roll_leaves_modified_arrows_to_the_shortcuts() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     app.run("edit.select", json!({"tracks": ["Keys"]})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut SoundApp, events: Vec<Event>| {
@@ -239,6 +240,7 @@ fn the_piano_roll_leaves_modified_arrows_to_the_shortcuts() {
 fn the_piano_roll_selection_follows_notes_the_arrows_move_past_others() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     app.run("edit.select", json!({"tracks": ["Keys"]})).unwrap();
     let ctx = egui::Context::default();
     let frame = |app: &mut SoundApp, events: Vec<Event>| {

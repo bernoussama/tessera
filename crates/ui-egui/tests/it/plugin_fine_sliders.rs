@@ -94,6 +94,7 @@ fn insert_param(h: &Harness<'_, SoundApp>, track: TrackId, slot: usize, p: &Para
 #[test]
 fn plugin_window_sliders_move_a_tenth_as_far_with_ctrl_held() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let kick = app.engine.session().track_by_name("Kick").unwrap().id;
     app.ui.plugin_windows = vec![(kick, 0)];
     let mut h = harness(app);
@@ -114,6 +115,7 @@ fn plugin_window_sliders_move_a_tenth_as_far_with_ctrl_held() {
 #[test]
 fn the_control_key_alone_also_gives_a_fine_drag_on_a_plugin_slider() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let kick = app.engine.session().track_by_name("Kick").unwrap().id;
     app.ui.plugin_windows = vec![(kick, 0)];
     let mut h = harness(app);
@@ -151,6 +153,7 @@ fn toggle_ctrl_during_a_drag(h: &mut Harness<'_, SoundApp>, what: &str, rail: Re
 #[test]
 fn pressing_and_releasing_ctrl_during_a_drag_keeps_the_value_of_a_logarithmic_slider() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let kick = app.engine.session().track_by_name("Kick").unwrap().id;
     app.ui.plugin_windows = vec![(kick, 0)];
     let mut h = harness(app);
@@ -165,6 +168,7 @@ fn pressing_and_releasing_ctrl_during_a_drag_keeps_the_value_of_a_logarithmic_sl
 #[test]
 fn pressing_and_releasing_ctrl_during_a_drag_keeps_a_whole_number_slider_whole() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let keys = app.engine.session().track_by_name("Keys").unwrap().id;
     app.run("mix.instrument", json!({"track": keys.0, "plugin": "sampler"})).unwrap();
     app.ui.plugin_windows = vec![(keys, soundcraft_mix::INSTRUMENT_SLOT)];
@@ -184,6 +188,7 @@ fn pressing_and_releasing_ctrl_during_a_drag_keeps_a_whole_number_slider_whole()
 #[test]
 fn a_small_ctrl_drag_at_the_low_end_of_a_log_slider_moves_the_value() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let kick = app.engine.session().track_by_name("Kick").unwrap().id;
     app.ui.plugin_windows = vec![(kick, 1)];
     let mut h = harness(app);
@@ -206,6 +211,7 @@ fn a_small_ctrl_drag_at_the_low_end_of_a_log_slider_moves_the_value() {
 #[test]
 fn a_small_ctrl_drag_at_the_low_end_of_a_log_slider_with_a_value_box_moves_the_value() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let clip = app.engine.session().track_by_name("Kick").unwrap().clips().iter().find(|c| c.is_audio()).unwrap().id;
     app.run("edit.select", json!({"clips": [clip.0]})).unwrap();
     app.ui.show_clip_effects = true;
@@ -229,6 +235,7 @@ fn a_small_ctrl_drag_at_the_low_end_of_a_log_slider_with_a_value_box_moves_the_v
 #[test]
 fn whole_number_instrument_sliders_move_a_tenth_as_far_and_stay_whole() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let keys = app.engine.session().track_by_name("Keys").unwrap().id;
     app.run("mix.instrument", json!({"track": keys.0, "plugin": "sampler"})).unwrap();
     app.ui.plugin_windows = vec![(keys, soundcraft_mix::INSTRUMENT_SLOT)];
@@ -248,6 +255,7 @@ fn whole_number_instrument_sliders_move_a_tenth_as_far_and_stay_whole() {
 #[test]
 fn clip_effects_sliders_move_a_tenth_as_far_with_ctrl_held() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let s = app.engine.session();
     let clip = s.track_by_name("Kick").unwrap().clips().iter().find(|c| c.is_audio()).unwrap().id;
     app.run("edit.select", json!({"clips": [clip.0]})).unwrap();
@@ -276,6 +284,7 @@ fn clip_effects_sliders_move_a_tenth_as_far_with_ctrl_held() {
 #[test]
 fn clip_effects_value_boxes_move_a_tenth_as_far_with_ctrl_held() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let s = app.engine.session();
     let clip = s.track_by_name("Kick").unwrap().clips().iter().find(|c| c.is_audio()).unwrap().id;
     app.run("edit.select", json!({"clips": [clip.0]})).unwrap();
@@ -293,6 +302,7 @@ fn clip_effects_value_boxes_move_a_tenth_as_far_with_ctrl_held() {
 #[test]
 fn clip_effects_log_taper_sliders_use_a_logarithmic_rail() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     let s = app.engine.session();
     let clip = s.track_by_name("Kick").unwrap().clips().iter().find(|c| c.is_audio()).unwrap().id;
     app.run("edit.select", json!({"clips": [clip.0]})).unwrap();
@@ -316,6 +326,7 @@ fn fallback_audiosuite_sliders_move_a_tenth_as_far_with_ctrl_held() {
         [("normalize", "Peak dB", "target_db"), ("time_stretch", "Length ratio", "ratio"), ("pitch_shift", "Semitones", "semitones")]
     {
         let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+        app.ui.show_devices = false;
         app.ui.audiosuite = Some(process.into());
         let mut h = harness(app);
         let read = |h: &Harness<'_, SoundApp>| {
@@ -330,6 +341,7 @@ fn fallback_audiosuite_sliders_move_a_tenth_as_far_with_ctrl_held() {
 #[test]
 fn audiosuite_parameter_sliders_move_a_tenth_as_far_with_ctrl_held() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     app.ui.audiosuite = Some("compressor".into());
     let mut h = harness(app);
     for (label, id) in [("Threshold", "threshold"), ("Knee", "knee")] {
@@ -345,6 +357,7 @@ fn audiosuite_parameter_sliders_move_a_tenth_as_far_with_ctrl_held() {
 #[test]
 fn audiosuite_value_boxes_move_a_tenth_as_far_with_ctrl_held() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.ui.show_devices = false;
     app.ui.audiosuite = Some("compressor".into());
     let mut h = harness(app);
     for (label, id) in [("Threshold", "threshold"), ("Knee", "knee")] {

@@ -33,6 +33,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, Option<&str>)] = &[
     ("window.close", "Close Window", "Window > Close Window", Some("Cmd+W")),
     ("window.hide_floating", "Hide All Floating Windows", "Window > Hide All Floating Windows", Some("Cmd+Ctrl+W")),
     ("window.midi_editor", "MIDI Editor", "Window > MIDI Editor", None),
+    ("window.devices", "Devices", "Window > Devices", None),
     ("window.universe", "Universe", "View > Other Displays > Universe", Some("Alt+7")),
     ("window.video", "Video", "Window > Video", Some("Cmd+9")),
     ("window.video_universe", "Video Universe", "Window > Video Universe", None),
@@ -678,6 +679,7 @@ pub fn run_ui_command(app: &mut SoundApp, id: &str, p: &Value) -> Option<Result<
         "window.about" => toggle(&mut app.ui.show_about),
         "window.midi_editor" => toggle(&mut app.ui.show_midi_editor),
         "window.edit_tools" => toggle(&mut app.ui.show_edit_tools),
+        "window.devices" => toggle(&mut app.ui.show_devices),
         "window.midi_front" => {
             app.ui.show_midi_editor = true;
             json!({"value": true})

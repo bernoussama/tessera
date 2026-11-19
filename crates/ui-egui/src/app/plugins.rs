@@ -62,11 +62,12 @@ impl SoundApp {
         }
     }
 
-    /// Opens the insert just picked from its menu: a hosted plugin's own editor, else (a built-in
-    /// plugin, no audio engine, or an editor that can't open here) its plugin window.
+    /// Opens the plugin in `pending_open`: an insert just picked from its menu, or an instrument
+    /// (`INSTRUMENT_SLOT`) opened from the Devices panel. A hosted plugin's own editor, else (a
+    /// built-in plugin, no audio engine, or an editor that can't open here) its plugin window.
     pub(super) fn open_inserted(&mut self) {
         let Some((track, slot)) = self.pending_open.take() else { return };
-        let Some(plugin) = self.engine.session().track(track).and_then(|t| t.mixer.inserts.get(slot).cloned().flatten()).map(|i| i.plugin) else {
+        let Some(plugin) = self.engine.session().track(track).and_then(|t| slot_insert(t, slot)).map(|i| i.plugin.clone()) else {
             return;
         };
         if soundcraft_mix::is_third_party(&plugin)
@@ -128,11 +129,17 @@ impl SoundApp {
     }
 }
 
+/// The plugin in `slot` of `track`: an insert index, or the instrument for
+/// [`soundcraft_mix::INSTRUMENT_SLOT`].
+pub(crate) fn slot_insert(track: &soundcraft_model::Track, slot: usize) -> Option<&soundcraft_model::Insert> {
+    if slot == soundcraft_mix::INSTRUMENT_SLOT { track.instrument.as_ref() } else { track.mixer.inserts.get(slot)?.as_ref() }
+}
+
 /// The status line naming the plugin in `slot` (an insert index or
 /// [`soundcraft_mix::INSTRUMENT_SLOT`]), which the engine took out of the signal path.
 pub(crate) fn failed_plugin_status(s: &soundcraft_model::Session, track: TrackId, slot: usize) -> Option<String> {
     let t = s.track(track)?;
-    let ins = if slot == soundcraft_mix::INSTRUMENT_SLOT { t.instrument.as_ref() } else { t.mixer.inserts.get(slot)?.as_ref() }?;
+    let ins = slot_insert(t, slot)?;
     let name = crate::mix_window::plugin_info(&ins.plugin).map_or(ins.plugin.as_str(), |p| p.name);
     Some(crate::localized_format!(
         "{name} on {track} put out invalid audio, so it is bypassed until playback stops or starts again.",

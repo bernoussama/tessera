@@ -16,19 +16,21 @@ pub enum Panel {
     Tracks,
     Clips,
     Midi,
+    Devices,
     Memory,
     History,
     Browser,
 }
 
 impl Panel {
-    pub const ALL: &[Self] = &[Self::Canvas, Self::Tracks, Self::Clips, Self::Midi, Self::Memory, Self::History, Self::Browser];
+    pub const ALL: &[Self] = &[Self::Canvas, Self::Tracks, Self::Clips, Self::Midi, Self::Devices, Self::Memory, Self::History, Self::Browser];
     fn label(self) -> &'static str {
         match self {
             Self::Canvas => "Session",
             Self::Tracks => "Tracks and Groups",
             Self::Clips => "Clips",
-            Self::Midi => "MIDI Editor",
+            Self::Midi => "Notes",
+            Self::Devices => "Devices",
             Self::Memory => "Memory Locations",
             Self::History => "Undo History",
             Self::Browser => "Browser",
@@ -105,11 +107,12 @@ fn default_dock(panel: Panel) -> Option<(Side, f32)> {
     }
 }
 
-/// The Edit window's built-in arrangement: the document view in the centre, with the MIDI editor
-/// docked along the bottom and the Browser docked on the left. Tracks and Groups, Clips, Memory
+/// The Edit window's built-in arrangement: the document view in the centre, with the Notes (MIDI
+/// editor) and Devices tabs docked along the bottom, Devices active, and the Browser docked on the left. Tracks and Groups, Clips, Memory
 /// Locations and Undo History start closed; the Window menu opens them.
 pub fn edit_default() -> Workspace {
-    let canvas_and_midi = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + MIDI_TAB_HEIGHT), tabs(Panel::Canvas), tabs(Panel::Midi));
+    let bottom = Node::Tabs { panels: vec![Panel::Midi, Panel::Devices], active: 1 };
+    let canvas_and_midi = split(SplitAxis::Vertical, SplitSize::FixedSecond(MIDI_HEIGHT + MIDI_TAB_HEIGHT), tabs(Panel::Canvas), bottom);
     Workspace::new(Layout {
         root: Some(split(
             SplitAxis::Horizontal,
@@ -206,8 +209,8 @@ pub fn validate(workspace: &Workspace) -> Result<(), String> {
 /// [`validate`] plus the Mix window's rule: Clips and MIDI stay in Edit.
 pub fn validate_mix(workspace: &Workspace) -> Result<(), String> {
     validate(workspace)?;
-    if workspace.layout.contains(&Panel::Clips) || workspace.layout.contains(&Panel::Midi) {
-        return Err("Clips and MIDI panels belong to the Edit window".into());
+    if workspace.layout.contains(&Panel::Clips) || workspace.layout.contains(&Panel::Midi) || workspace.layout.contains(&Panel::Devices) {
+        return Err("Clips, MIDI and Devices panels belong to the Edit window".into());
     }
     Ok(())
 }
@@ -326,6 +329,7 @@ fn sync(workspace: &mut Workspace, app: &crate::SoundApp, edit: bool) -> Result<
     if edit {
         set_visible(workspace, Panel::Clips, app.ui.show_clip_list)?;
         set_visible(workspace, Panel::Midi, app.ui.show_midi_editor)?;
+        set_visible(workspace, Panel::Devices, app.ui.show_devices)?;
     }
     Ok(())
 }
@@ -337,6 +341,7 @@ fn publish_visibility(app: &mut crate::SoundApp, workspace: &Workspace, edit: bo
     if edit {
         app.ui.show_clip_list = workspace.layout.contains(&Panel::Clips);
         app.ui.show_midi_editor = workspace.layout.contains(&Panel::Midi);
+        app.ui.show_devices = workspace.layout.contains(&Panel::Devices);
     }
 }
 
@@ -373,8 +378,8 @@ fn operation(fields: &serde_json::Map<String, Value>) -> Result<DockOperation<Pa
 /// front window's workspace.
 pub fn command(app: &mut crate::SoundApp, id: &str, params: &Value) -> Result<Value, String> {
     let edit = app.ui.window == crate::MainWindow::Edit;
-    if !edit && ["panel", "target"].iter().any(|field| matches!(params.get(*field).and_then(Value::as_str), Some("clips" | "midi"))) {
-        return Err("Clips and MIDI panels belong to the Edit window".into());
+    if !edit && ["panel", "target"].iter().any(|field| matches!(params.get(*field).and_then(Value::as_str), Some("clips" | "midi" | "devices"))) {
+        return Err("Clips, MIDI and Devices panels belong to the Edit window".into());
     }
     let mut fields = match params {
         Value::Object(fields) => fields.clone(),
@@ -511,6 +516,7 @@ pub fn show(app: &mut crate::SoundApp, ui: &mut egui::Ui, window: crate::MainWin
                 ui.ctx().data_mut(|data| data.insert_temp(egui::Id::unique("soundcraft-midi-body"), ui.max_rect()));
                 minimum_body(ui, egui::vec2(420.0, 260.0), |ui| crate::midi_editor::show(app, ui));
             }
+            Panel::Devices => crate::panels::devices::show(app, ui),
             Panel::Memory => crate::panels::memory_locations(app, ui),
             Panel::History => crate::panels::undo_history(app, ui),
             Panel::Browser => crate::panels::browser::show(app, ui),
@@ -548,6 +554,7 @@ fn panel_limits(panel: &Panel) -> PanelLimits {
         Panel::Tracks => (egui::vec2(140.0, 120.0), 520.0),
         Panel::Clips => (egui::vec2(180.0, 120.0), 720.0),
         Panel::Midi => (egui::vec2(420.0, 260.0), 1_000_000.0),
+        Panel::Devices => (egui::vec2(200.0, 150.0), 1_000_000.0),
         Panel::Memory => (egui::vec2(260.0, 160.0), 1_000_000.0),
         Panel::History => (egui::vec2(200.0, 160.0), 720.0),
         Panel::Browser => (egui::vec2(140.0, 120.0), 520.0),

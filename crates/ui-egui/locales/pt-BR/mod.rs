@@ -1,6 +1,7 @@
 /// Returns the Brazilian Portuguese translation for a source-language UI string.
 pub(super) fn translate(source: &str) -> Option<&'static str> {
     Some(match source {
+        "+ Add effect" => "+ Adicionar efeito",
         "+ Marker" => "+ Marcador",
         "CPU" => "CPU",
         "Edit Tools" => "Ferramentas de edição",
@@ -28,6 +29,7 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
         "All" => "Tudo",
         "All audio clips checked" => "Todos os clipes de áudio verificados",
         "All audio clips have loaded media within source bounds." => "Todos os clipes de áudio têm mídia carregada dentro dos limites da origem.",
+        "All insert slots are in use" => "Todos os slots de insert estão em uso",
         "An open-source digital audio workstation from the ArtCraft team." => {
             "Uma estação de trabalho de áudio digital de código aberto da equipe ArtCraft."
         }
@@ -96,6 +98,7 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
         "Delete" => "Excluir",
         "Delete Group" => "Excluir grupo",
         "Delete Unused..." => "Excluir não usados...",
+        "Devices" => "Dispositivos",
         "DESTINATION" => "DESTINO",
         "Discard" => "Descartar",
         "Dither (TPDF)" => "Dither (TPDF)",
@@ -169,6 +172,7 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
         }
         "No parameters." => "Nenhum parâmetro.",
         "No Recent Sessions" => "Nenhuma sessão recente",
+        "Notes" => "Notas",
         "Non-destructive, applied at playback to the selected MIDI tracks." => {
             "Não destrutivo; aplicado durante a reprodução às faixas MIDI selecionadas."
         }
@@ -179,6 +183,7 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
         "Number of Loops" => "Número de repetições",
         "Open Plugin Editor" => "Abrir editor do plugin",
         "Open Recent" => "Abrir recentes",
+        "Open plugin window" => "Abrir janela do plugin",
         "Operation" => "Operação",
         "Original Time Stamp" => "Registro de data e hora original",
         "Output" => "Saída",
@@ -238,6 +243,7 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
         "Search commands…" => "Pesquisar comandos…",
         "Select a MIDI clip or MIDI track." => "Selecione um clipe ou uma faixa MIDI.",
         "Select a MIDI clip." => "Selecione um clipe MIDI.",
+        "Select a track to see its devices." => "Selecione uma faixa para ver os seus dispositivos.",
         "Select an audio clip." => "Selecione um clipe de áudio.",
         "Select an instrument track" => "Selecione uma faixa de instrumento",
         "Select Tracks in Group" => "Selecionar faixas do grupo",
@@ -325,6 +331,7 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
             "O fim do áudio ativo é desconhecido (taxa de amostragem da sessão inválida)"
         }
         "No engine" => "Sem mecanismo de áudio",
+        "No instrument or effects on this track." => "Esta faixa não tem instrumento nem efeitos.",
         "default buffer" => "buffer padrão",
         "Bus name: {name}" => "Nome do bus: {name}",
         "Model" => "Modelo",
@@ -1094,6 +1101,8 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         "Modify Group" => "Modificar grupo",
         "Move Clips" => "Mover clipes",
         "Move Insert" => "Mover insert",
+        "Move left" => "Mover para a esquerda",
+        "Move right" => "Mover para a direita",
         "Move Notes" => "Mover notas",
         "Move Track" => "Mover faixa",
         "Movies" => "Filmes",

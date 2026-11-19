@@ -11,6 +11,7 @@ const SIZE: (f32, f32) = (1400.0, 900.0);
 
 fn harness(tracks: usize) -> Harness<'static, SoundApp> {
     let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
+    app.ui.show_devices = false;
     app.run("ui.dock", json!({"operation": "open", "panel": "tracks"})).unwrap();
     // Keep the docked MIDI editor out of the way of the rows.
     app.ui.show_midi_editor = false;

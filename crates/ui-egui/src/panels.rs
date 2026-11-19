@@ -23,6 +23,7 @@ pub use tracks::tracks_and_groups;
 use transport::{big_counter, transport_window};
 
 pub mod browser;
+pub mod devices;
 pub mod extra_windows;
 pub mod midi_editor;
 pub mod sampler_window;

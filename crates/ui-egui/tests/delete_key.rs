@@ -62,6 +62,7 @@ fn delete_with_nothing_selected_or_in_the_mix_window_changes_nothing() {
 fn the_midi_editor_keeps_the_key_for_its_selected_notes() {
     let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
     app.ui.show_midi_editor = true;
+    app.ui.show_devices = false;
     let end: i64 = 48_000 * 600;
     app.run("edit.select", json!({"tracks": ["Keys"], "start": 0, "end": end})).unwrap();
     let clips_before = clips(&app, "Keys");
@@ -88,6 +89,7 @@ fn delete_and_backspace_clear_after_midi_notes_then_an_audio_range_is_selected()
     for key in [Key::Delete, Key::Backspace] {
         let (ctx, mut app) = rig(OperatingSystem::Nix);
         app.ui.show_midi_editor = true;
+        app.ui.show_devices = false;
         let end: i64 = 48_000 * 600;
         app.run("edit.select", json!({"tracks": ["Keys"], "start": 0, "end": end})).unwrap();
         app.midi.selected = vec![0, 1];

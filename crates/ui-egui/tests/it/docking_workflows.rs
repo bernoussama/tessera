@@ -239,7 +239,7 @@ fn a_floating_window_saved_in_the_one_group_shape_keeps_it_when_written_back() {
     use craft_ui::docking::Node;
     // A floating window as one `{panels, active, rect}` group, as releases before the shared
     // docking model wrote it, beside the dock layout.
-    let mut settings = serde_json::to_value(UiState { show_midi_editor: true, ..Default::default() }).unwrap();
+    let mut settings = serde_json::to_value(UiState { show_midi_editor: true, show_devices: true, ..Default::default() }).unwrap();
     settings["docking"]["layout"]["floating"] = json!([{"panels": ["memory", "history"], "active": 1, "rect": [300.0, 120.0, 420.0, 360.0]}]);
     let state: UiState = serde_json::from_value(settings).unwrap();
     soundcraft_ui_egui::docking::validate(&state.docking).unwrap();
