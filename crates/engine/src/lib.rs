@@ -212,9 +212,17 @@ pub struct Engine {
     imports: Vec<io::DecodedImport>,
 }
 
+/// The calm default view of a new session: only the Bars|Beats ruler. Sessions loaded from a
+/// file keep the rulers they were saved with.
+pub fn calm_view(s: &mut Session) {
+    s.edit.rulers = vec!["bars_beats".into()];
+}
+
 impl Default for Engine {
     fn default() -> Self {
-        Engine::new(Session::default())
+        let mut s = Session::default();
+        calm_view(&mut s);
+        Engine::new(s)
     }
 }
 

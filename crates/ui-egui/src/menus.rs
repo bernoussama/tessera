@@ -29,7 +29,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, Option<&str>)] = &[
     ("window.session_info", "Session Info", "", None),
     ("window.audio_health", "Session Audio Health", "", None),
     ("window.edit_tools", "Edit Tools", "", None),
-    ("window.about", "About SoundCraft", "", None),
+    ("window.about", "About Tessera", "", None),
     ("window.close", "Close Window", "Window > Close Window", Some("Cmd+W")),
     ("window.hide_floating", "Hide All Floating Windows", "Window > Hide All Floating Windows", Some("Cmd+Ctrl+W")),
     ("window.midi_editor", "MIDI Editor", "Window > MIDI Editor", None),
@@ -276,9 +276,9 @@ pub fn menu_bar(app: &mut SoundApp, ui: &mut egui::Ui) {
         ui,
         |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
-                ui.menu_button(crate::localization::text("SoundCraft"), |ui| {
+                ui.menu_button(crate::localization::text("Tessera"), |ui| {
                     ui.add_enabled_ui(menu_entries_enabled, |ui| {
-                        if ui.button(crate::localization::text("About SoundCraft")).clicked() {
+                        if ui.button(crate::localization::text("About Tessera")).clicked() {
                             app.ui.show_about = true;
                         }
                         if ui.add_enabled(preferences_enabled, egui::Button::new(crate::localization::text("Preferences..."))).clicked() {
@@ -450,6 +450,7 @@ fn checked_state(app: &SoundApp, path: &str, id: Option<&str>) -> bool {
         Some("options.tab_to_transient") => e.tab_to_transient,
         Some("options.automation_follows_edit") => e.automation_follows_edit,
         Some("options.markers_follow_edit") => e.markers_follow_edit,
+        Some("view.edit_detailed_headers") => e.flag("edit_view.detailed_headers"),
         Some("options.click") => e.click,
         Some("options.delay_compensation") => e.delay_compensation,
         Some("options.pre_fader_metering") => e.pre_fader_metering,

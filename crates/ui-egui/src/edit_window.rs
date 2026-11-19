@@ -45,7 +45,9 @@ use input::{clip_at, fade_midpoint};
 use layout::COLUMN_TITLES_H;
 #[cfg(test)]
 use layout::lane_rect;
-pub use layout::{COLUMN_W, EditLayout, HEADER_W, LANE_H, RULER_H, edit_columns, header_width, rect, sample_at, track_height, x_of};
+pub use layout::{
+    COLUMN_W, EditLayout, HEADER_W, LANE_H, RULER_H, detailed_headers, edit_columns, header_base, header_width, rect, sample_at, track_height, x_of,
+};
 use overlay::overlay;
 #[cfg(test)]
 use overlay::playhead_colour;
@@ -128,7 +130,7 @@ pub(crate) fn main_area(app: &mut SoundApp, ui: &mut Ui) {
     if session.edit.flag("view.ruler.tempo_editor") && session.edit.rulers.iter().any(|ruler| ruler == "tempo") {
         ruler_height_total += ruler_height("tempo_editor");
     }
-    let minimum = vec2(header_width(&edit_columns(session)) + 64.0, ruler_height_total + 100.0);
+    let minimum = vec2(header_width(session, &edit_columns(session)) + 64.0, ruler_height_total + 100.0);
     crate::docking::minimum_body(ui, minimum, |ui| main_area_content(app, ui));
 }
 
@@ -147,7 +149,7 @@ fn main_area_content(app: &mut SoundApp, ui: &mut Ui) {
     let titles_h = if cols.is_empty() { 0.0 } else { COLUMN_TITLES_H };
     let rulers_h = rulers.iter().map(|r| ruler_height(r)).sum::<f32>() + 6.0 + titles_h;
     let hscroll_h = 14.0;
-    let hw = header_width(&cols);
+    let hw = header_width(app.engine.session(), &cols);
     let header = Rect::from_min_max(full.min, pos2(full.min.x + hw, full.max.y - hscroll_h));
     let tl = Rect::from_min_max(pos2(full.min.x + hw, full.min.y + rulers_h), pos2(full.max.x - 12.0, full.max.y - hscroll_h));
     let rulers_rect = Rect::from_min_max(pos2(full.min.x, full.min.y), pos2(full.max.x, full.min.y + rulers_h));
@@ -156,8 +158,10 @@ fn main_area_content(app: &mut SoundApp, ui: &mut Ui) {
     ui.painter().rect_filled(full, 0.0, t.window_bg);
     scroll_and_zoom(app, ui, full, tl);
     draw_rulers(app, ui, rulers_rect, tl, &rulers);
-    views_button(app, ui, rulers_rect);
-    column_titles(ui, rulers_rect, &cols);
+    if layout::detailed_headers(app.engine.session()) {
+        views_button(app, ui, rulers_rect);
+    }
+    column_titles(ui, app.engine.session(), rulers_rect, &cols);
     if let Some(id) = app.edit_scroll_into_view.take() {
         scroll_into_view(app, id, tl.height());
     }

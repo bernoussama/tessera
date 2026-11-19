@@ -7,7 +7,7 @@ pub(super) fn about(app: &mut SoundApp, ctx: &egui::Context) {
         return;
     }
     let tab_id = egui::Id::unique("about_tab");
-    egui::Window::new(crate::localization::text("About SoundCraft"))
+    egui::Window::new(crate::localization::text("About Tessera"))
         .id(egui::Id::unique("About SoundCraft"))
         .open(&mut open)
         .default_size(vec2(820.0, 420.0))
@@ -27,7 +27,7 @@ pub(super) fn about(app: &mut SoundApp, ctx: &egui::Context) {
                 1 => crate::credits::contributors_ui(ui),
                 2 => crate::credits::models_ui(ui),
                 _ => {
-                    ui.label(egui::RichText::new(crate::localization::text("SoundCraft")).font(bold(22.0)));
+                    ui.label(egui::RichText::new(crate::localization::text("Tessera")).font(bold(22.0)));
                     ui.label(crate::localized_format!("Version {}", env!("CARGO_PKG_VERSION")));
                     ui.label(crate::localization::text("An open-source digital audio workstation from the ArtCraft team."));
                     ui.label(crate::localization::text("Dual-licensed MIT OR Apache-2.0. Made with Rust and egui."));

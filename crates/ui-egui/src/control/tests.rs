@@ -21,7 +21,10 @@ fn raw_input(width: f32, height: f32, max_texture_side: usize) -> RawInput {
 
 /// A demo-backed app with no player, for control tests.
 fn app() -> SoundApp {
-    SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default())
+    let mut engine = soundcraft_engine::demo::demo_engine();
+    engine.session_mut().edit.set_flag("edit_view.detailed_headers", true);
+    engine.session_mut().edit.rulers = ["bars_beats", "min_secs", "tempo", "meter", "markers"].map(String::from).to_vec();
+    SoundApp::new(engine, None, Services::default())
 }
 
 /// Run one real UI pass: feed raw input, then logic and UI, dropping texture deltas the tests do not inspect.

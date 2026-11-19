@@ -14,6 +14,7 @@ impl Rig {
     fn new() -> Rig {
         let mut engine = soundcraft_engine::Engine::default();
         engine.execute("track.new", &json!({})).unwrap();
+        engine.session_mut().edit.rulers = vec!["bars_beats".into(), "markers".into()];
         engine.execute("markers.add", &json!({"name": "Verse", "at": 96_000})).unwrap();
         let mut r = Rig { ctx: egui::Context::default(), app: SoundApp::new(engine, None, Services::default()), shapes: Vec::new() };
         r.frames(4);

@@ -35,7 +35,9 @@ fn kick_clip_count(h: &Harness<'_, SoundApp>) -> usize {
 }
 
 fn demo() -> Harness<'static, SoundApp> {
-    let engine = soundcraft_engine::demo::demo_engine();
+    let mut engine = soundcraft_engine::demo::demo_engine();
+    engine.session_mut().edit.set_flag("edit_view.detailed_headers", true);
+    engine.session_mut().edit.rulers = ["bars_beats", "min_secs", "tempo", "meter", "markers"].map(String::from).to_vec();
     let app = SoundApp::new(engine, None, Services::default());
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).with_pixels_per_point(2.0).build_ui_state(
         |ui, app: &mut SoundApp| {
