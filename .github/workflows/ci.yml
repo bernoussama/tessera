@@ -34,12 +34,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: echo "cores=$(nproc)"
       # Cached .debs: `apt-get update` alone has taken minutes on a slow mirror.
       # The Ubuntu mirror is sometimes very slow (minutes for one package), so the downloaded
       # .debs are cached; apt still installs them normally.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/apt-archives
           key: apt-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/ci.yml') }}
@@ -66,11 +66,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: echo "cores=$(nproc)"
       # The Ubuntu mirror is sometimes very slow (minutes for one package), so the downloaded
       # .debs are cached; apt still installs them normally.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/apt-archives
           key: apt-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/ci.yml') }}
@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: echo "cores=$(nproc)"
       - uses: dtolnay/rust-toolchain@stable
         with:
